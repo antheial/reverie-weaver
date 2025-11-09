@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Bucket
+   uuid = "486EB8C0-857A-45BF-AD0F-6B18CDA210B1"
+   type = "1"
+   version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "4BD0CA24-9BB0-4AAA-BA18-BDE5C3ACB47E"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "V.1/Models/Views/DeskView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "2"
+            endingLineNumber = "2"
+            landmarkName = "unknown"
+            landmarkType = "0">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
+</Bucket>
