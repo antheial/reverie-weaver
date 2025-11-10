@@ -42,7 +42,10 @@ struct ReverieWeaverApp: App {
 
         do {
             // Create the persistent container
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(
+                for: schema,
+                configurations: modelConfiguration
+            )
 
             // NOTE:
             // Removed legacy "default habit seeding"
