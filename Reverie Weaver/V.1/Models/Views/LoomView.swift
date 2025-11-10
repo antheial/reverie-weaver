@@ -144,15 +144,16 @@ struct LoomView: View {
                 ReverieWeaverBackground()  // ← ADD THIS LINE
                 ScrollView {
                     VStack(spacing: 24) {
-                    headerSection
-                    weekCalendarWithTasks
-                    priorityTasksSection
-                    timelineSection
-                }
+                        headerSection
+                        weekCalendarWithTasks
+                        priorityTasksSection
+                        timelineSection
+                    }
                     .padding(.bottom, 100) // Extra padding for floating timer
-                .dismissKeyboardOnBackgroundTap()
-            }
+                    .dismissKeyboardOnBackgroundTap()
+                }
                 .background(Color.clear)
+                .simultaneousGesture(daySwipeGesture)
                 
                 // Floating Pomodoro Timer
                 VStack {
@@ -1227,6 +1228,48 @@ struct LoomView: View {
            }
        }
     
+    private var daySwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 25)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+
+                guard abs(horizontal) > abs(vertical), abs(horizontal) > 45 else { return }
+
+                if horizontal < 0 {
+                    if canNavigateToNextDay {
+                        navigateToNextDay()
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    } else {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                } else {
+                    navigateToPreviousDay()
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                }
+            }
+    }
+
+    private func navigateToPreviousDay() {
+        if let newDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) {
+            selectedDate = newDate
+        }
+    }
+
+    private func navigateToNextDay() {
+        guard canNavigateToNextDay,
+              let newDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate) else { return }
+
+        selectedDate = newDate
+    }
+
+    private var canNavigateToNextDay: Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let selected = calendar.startOfDay(for: selectedDate)
+        return selected < today
+    }
+
     private func changeWeek(by weeks: Int) {
         if let newDate = Calendar.current.date(byAdding: .weekOfYear, value: weeks, to: selectedDate) {
             selectedDate = newDate
