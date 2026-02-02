@@ -5,32 +5,45 @@
 //  Created by Antheia Li on 10/25/25.
 //
 
-
-//
-// TimeAdaptiveText.swift
-// Reverie Weaver
-//
-// Time-adaptive text system that works with your existing Color+Extensions
-// Drop this file into your project - no conflicts!
-//
-
 import SwiftUI
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MARK: - TIME-ADAPTIVE TEXT (No conflicts with existing code!)
+// MARK: - TIME-ADAPTIVE TEXT (Enhanced for Maximum Harmony!)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//
+// ✨ ENHANCED: Text colors now harmonize beautifully with each time period:
+//
+//   • Deep Night/Evening: Warm cream-whites on dark blue backgrounds
+//   • Dawn: Peachy-cream on lavender/rose twilight backgrounds
+//   • Daytime: Rich warm browns on bright cream backgrounds
+//   • Golden Hour: Deep chocolate-browns on amber backgrounds
+//   • Dusk: BRONZY PEACH-GOLD on coral/mauve sunset (FIXED! 🎨)
+//
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 extension View {
-    /// Time-adaptive text that fixes readability across all gradients
-    /// Works with your existing Color extensions
+    /// Time-adaptive text that provides optimal readability across all time-based gradients
+    /// Each time period has carefully chosen warm/cool tones that harmonize with backgrounds
     func timeAdaptiveText(
         colorScheme: ColorScheme,
-        style: TimeAdaptiveTextStyle = .primary
+        style: TimeAdaptiveTextStyle = .primary,
+        isCompleted: Bool = false  // Add this parameter
     ) -> some View {
         let hour = Calendar.current.component(.hour, from: Date())
         let period = TimeOfDay(hour: hour)
         
-        let config = style.configuration(for: colorScheme, period: period)
+        var config = style.configuration(for: colorScheme, period: period)
+        
+        // Reduce opacity for completed items
+        if isCompleted {
+            config = TimeAdaptiveTextConfiguration(
+                color: config.color.opacity(0.5),  // Adjust this value to taste
+                shadowColor: config.shadowColor.opacity(0.5),
+                shadowRadius: config.shadowRadius * 0.7,
+                shadowX: config.shadowX,
+                shadowY: config.shadowY
+            )
+        }
         
         return self
             .foregroundStyle(config.color)
@@ -42,7 +55,6 @@ extension View {
             )
     }
 }
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MARK: - Time Period System
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -112,12 +124,21 @@ enum TimeAdaptiveTextStyle {
     case accent      // Important highlights
     
     func configuration(for colorScheme: ColorScheme, period: TimeOfDay) -> TimeAdaptiveTextConfiguration {
-        if colorScheme == .dark {
-            return darkModeConfig()
-        } else {
+            // 1. If System is Dark Mode, ALWAYS use Dark Mode text (White)
+            if colorScheme == .dark {
+                return darkModeConfig()
+            }
+            
+            // 2. If System is Light Mode, check if the "Time" is visually dark
+            if period.isVisuallyDark {
+                // It is Light Mode, but it is Night Time in the app.
+                // We must use light text (effectively Dark Mode text styles)
+                return darkModeConfig()
+            }
+            
+            // 3. Otherwise, use standard Light Mode text
             return lightModeConfig(for: period)
         }
-    }
     
     // MARK: - Dark Mode
     
@@ -125,26 +146,26 @@ enum TimeAdaptiveTextStyle {
         switch self {
         case .primary:
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.95),
-                shadowColor: Color.white.opacity(0.2),
-                shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
+                color: Color(hex: "E8E3DB").opacity(0.88),  // Warm paper white
+                shadowColor: Color(hex: "4A3F35").opacity(0.25),
+                shadowRadius: 2.0, shadowX: 0, shadowY: 1.0
             )
         case .secondary:
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.85),
-                shadowColor: Color.white.opacity(0.15),
-                shadowRadius: 1.0, shadowX: 0, shadowY: 0.5
+                color: Color(hex: "C8C0B8").opacity(0.75),  // Soft grey-beige
+                shadowColor: Color(hex: "2A2520").opacity(0.2),
+                shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
             )
         case .subtle:
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.75),
-                shadowColor: Color.white.opacity(0.12),
-                shadowRadius: 1.0, shadowX: 0, shadowY: 0.4
+                color: Color(hex: "A89C92").opacity(0.58),  // Dusty warm grey
+                shadowColor: Color(hex: "1C1816").opacity(0.15),
+                shadowRadius: 1.2, shadowX: 0, shadowY: 0.6
             )
         case .accent:
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("F9D8B5"),
-                shadowColor: TimeAdaptiveColor.hex("CBA4F7").opacity(0.3),
+                color: Color(hex: "D4B896").opacity(0.85),  // Soft golden
+                shadowColor: Color(hex: "5C4A38").opacity(0.3),
                 shadowRadius: 2.0, shadowX: 0, shadowY: 1.0
             )
         }
@@ -166,34 +187,39 @@ enum TimeAdaptiveTextStyle {
     private func primaryLightConfig(for period: TimeOfDay) -> TimeAdaptiveTextConfiguration {
         switch period {
         case .deepNight, .evening:
+            // Deep night: Soft warm white for dark blue backgrounds
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.95),
-                shadowColor: Color.white.opacity(0.2),
-                shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
+                color: TimeAdaptiveColor.hex("F5F0E8").opacity(0.95),  // Warm cream-white
+                shadowColor: TimeAdaptiveColor.hex("0D1B2A").opacity(0.3),
+                shadowRadius: 1.8, shadowX: 0, shadowY: 0.9
             )
         case .dawn:
+            // Dawn: Peachy-cream for lavender/rose backgrounds
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.95),
-                shadowColor: Color.black.opacity(0.2),
+                color: TimeAdaptiveColor.hex("FFF8F0").opacity(0.96),  // Soft peach-white
+                shadowColor: TimeAdaptiveColor.hex("73628A").opacity(0.25),
                 shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
             )
         case .earlyMorning, .lateMorning, .earlyAfternoon, .lateAfternoon:
+            // Daytime: Rich dark text for bright backgrounds
             return TimeAdaptiveTextConfiguration(
-                color: .black.opacity(0.90),
-                shadowColor: Color.black.opacity(0.05),
-                shadowRadius: 0.5, shadowX: 0, shadowY: 0.3
+                color: TimeAdaptiveColor.hex("2A2520").opacity(0.92),  // Warm dark brown
+                shadowColor: Color.white.opacity(0.25),
+                shadowRadius: 0.8, shadowX: 0, shadowY: 0.4
             )
         case .goldenHour:
+            // Golden Hour: Deep burgundy-brown for warm amber backgrounds
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("3D2E2E"),
-                shadowColor: Color.white.opacity(0.25),
-                shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
+                color: TimeAdaptiveColor.hex("3D2520"),  // Deep warm brown
+                shadowColor: TimeAdaptiveColor.hex("FFD4A3").opacity(0.35),
+                shadowRadius: 1.8, shadowX: 0, shadowY: 0.9
             )
         case .dusk:
+            // DUSK FIX: Warm bronze-cream instead of pure white for coral/mauve backgrounds
             return TimeAdaptiveTextConfiguration(
-                color: .white,
-                shadowColor: Color.black.opacity(0.35),
-                shadowRadius: 2.0, shadowX: 0, shadowY: 1.0
+                color: TimeAdaptiveColor.hex("FFF5E8").opacity(0.96),  // Warm peachy-bronze
+                shadowColor: TimeAdaptiveColor.hex("5E3A52").opacity(0.4),  // Deep mauve shadow
+                shadowRadius: 2.2, shadowX: 0, shadowY: 1.1
             )
         }
     }
@@ -203,34 +229,39 @@ enum TimeAdaptiveTextStyle {
     private func secondaryLightConfig(for period: TimeOfDay) -> TimeAdaptiveTextConfiguration {
         switch period {
         case .deepNight, .evening:
+            // Deep night: Soft warm grey-white
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.88),
-                shadowColor: Color.white.opacity(0.15),
-                shadowRadius: 1.0, shadowX: 0, shadowY: 0.5
+                color: TimeAdaptiveColor.hex("E8E0D5").opacity(0.88),  // Warm grey-cream
+                shadowColor: TimeAdaptiveColor.hex("1B263B").opacity(0.25),
+                shadowRadius: 1.2, shadowX: 0, shadowY: 0.6
             )
         case .dawn:
+            // Dawn: Rosy-cream for twilight
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.90),
-                shadowColor: Color.black.opacity(0.15),
+                color: TimeAdaptiveColor.hex("FFEEE8").opacity(0.90),  // Rose-cream
+                shadowColor: TimeAdaptiveColor.hex("73628A").opacity(0.2),
                 shadowRadius: 1.0, shadowX: 0, shadowY: 0.5
             )
         case .earlyMorning, .lateMorning, .earlyAfternoon, .lateAfternoon:
+            // Daytime: Softer brown-grey
             return TimeAdaptiveTextConfiguration(
-                color: .black.opacity(0.75),
-                shadowColor: Color.black.opacity(0.03),
-                shadowRadius: 0.5, shadowX: 0, shadowY: 0.2
+                color: TimeAdaptiveColor.hex("5A4F45").opacity(0.78),  // Warm grey-brown
+                shadowColor: Color.white.opacity(0.15),
+                shadowRadius: 0.6, shadowX: 0, shadowY: 0.3
             )
         case .goldenHour:
+            // Golden Hour: Rich chocolate-brown
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("4A3535"),
-                shadowColor: Color.white.opacity(0.2),
-                shadowRadius: 1.2, shadowX: 0, shadowY: 0.6
+                color: TimeAdaptiveColor.hex("4A3528"),  // Deep chocolate
+                shadowColor: TimeAdaptiveColor.hex("FFD4A3").opacity(0.28),
+                shadowRadius: 1.4, shadowX: 0, shadowY: 0.7
             )
         case .dusk:
+            // DUSK FIX: Peachy-gold instead of white for harmony
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.95),
-                shadowColor: Color.black.opacity(0.3),
-                shadowRadius: 1.8, shadowX: 0, shadowY: 0.9
+                color: TimeAdaptiveColor.hex("FFEBD8").opacity(0.92),  // Peachy-bronze
+                shadowColor: TimeAdaptiveColor.hex("5E3A52").opacity(0.35),
+                shadowRadius: 2.0, shadowX: 0, shadowY: 1.0
             )
         }
     }
@@ -240,34 +271,39 @@ enum TimeAdaptiveTextStyle {
     private func subtleLightConfig(for period: TimeOfDay) -> TimeAdaptiveTextConfiguration {
         switch period {
         case .deepNight, .evening:
+            // Deep night: Muted warm white
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.80),  // Much better than 0.6!
-                shadowColor: Color.white.opacity(0.12),
-                shadowRadius: 1.0, shadowX: 0, shadowY: 0.4
+                color: TimeAdaptiveColor.hex("D8CFBF").opacity(0.82),  // Dusty cream
+                shadowColor: TimeAdaptiveColor.hex("1B263B").opacity(0.2),
+                shadowRadius: 1.0, shadowX: 0, shadowY: 0.5
             )
         case .dawn:
+            // Dawn: Soft rose-beige
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.85),
-                shadowColor: Color.black.opacity(0.12),
+                color: TimeAdaptiveColor.hex("FFE8DC").opacity(0.85),  // Rose-beige
+                shadowColor: TimeAdaptiveColor.hex("73628A").opacity(0.18),
                 shadowRadius: 1.0, shadowX: 0, shadowY: 0.4
             )
         case .earlyMorning, .lateMorning, .earlyAfternoon, .lateAfternoon:
+            // Daytime: Warm grey
             return TimeAdaptiveTextConfiguration(
-                color: Color.gray.opacity(0.85),
-                shadowColor: Color.black.opacity(0.02),
-                shadowRadius: 0.3, shadowX: 0, shadowY: 0.1
+                color: TimeAdaptiveColor.hex("75685D").opacity(0.72),  // Warm stone grey
+                shadowColor: Color.white.opacity(0.12),
+                shadowRadius: 0.5, shadowX: 0, shadowY: 0.2
             )
         case .goldenHour:
+            // Golden Hour: Sepia-brown
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("5A4545").opacity(0.90),
-                shadowColor: Color.white.opacity(0.15),
-                shadowRadius: 1.0, shadowX: 0, shadowY: 0.4
+                color: TimeAdaptiveColor.hex("5A3F32").opacity(0.88),  // Sepia brown
+                shadowColor: TimeAdaptiveColor.hex("FFD4A3").opacity(0.22),
+                shadowRadius: 1.2, shadowX: 0, shadowY: 0.5
             )
         case .dusk:
+            // DUSK FIX: Golden-bronze for subtle text (your main readability issue!)
             return TimeAdaptiveTextConfiguration(
-                color: .white.opacity(0.88),
-                shadowColor: Color.black.opacity(0.25),
-                shadowRadius: 1.6, shadowX: 0, shadowY: 0.7
+                color: TimeAdaptiveColor.hex("FFE0C2").opacity(0.88),  // Golden-bronze
+                shadowColor: TimeAdaptiveColor.hex("5E3A52").opacity(0.3),
+                shadowRadius: 1.8, shadowX: 0, shadowY: 0.8
             )
         }
     }
@@ -277,45 +313,52 @@ enum TimeAdaptiveTextStyle {
     private func accentLightConfig(for period: TimeOfDay) -> TimeAdaptiveTextConfiguration {
         switch period {
         case .deepNight:
+            // Deep night: Cool blue accent
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("A8DADC"),
-                shadowColor: TimeAdaptiveColor.hex("415A77").opacity(0.3),
-                shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
+                color: TimeAdaptiveColor.hex("B8D4E8"),  // Soft sky blue
+                shadowColor: TimeAdaptiveColor.hex("0D1B2A").opacity(0.4),
+                shadowRadius: 1.8, shadowX: 0, shadowY: 0.9
             )
         case .dawn:
+            // Dawn: Rosy-peach accent
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("FFD5C2"),
-                shadowColor: TimeAdaptiveColor.hex("73628A").opacity(0.3),
+                color: TimeAdaptiveColor.hex("FFCDB8"),  // Rose-peach
+                shadowColor: TimeAdaptiveColor.hex("73628A").opacity(0.35),
                 shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
             )
         case .earlyMorning, .lateMorning:
+            // Morning: Vibrant purple accent
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("7B68A6"),
-                shadowColor: TimeAdaptiveColor.hex("E3F2FD").opacity(0.2),
-                shadowRadius: 1.0, shadowX: 0, shadowY: 0.5
+                color: TimeAdaptiveColor.hex("7B68A6"),  // Morning purple
+                shadowColor: Color.white.opacity(0.3),
+                shadowRadius: 1.2, shadowX: 0, shadowY: 0.6
             )
         case .earlyAfternoon, .lateAfternoon:
+            // Afternoon: Deeper purple accent
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("9B7EBD"),
-                shadowColor: Color.black.opacity(0.05),
+                color: TimeAdaptiveColor.hex("8B6FA8"),  // Afternoon purple
+                shadowColor: Color.white.opacity(0.2),
                 shadowRadius: 1.0, shadowX: 0, shadowY: 0.5
             )
         case .goldenHour:
+            // Golden Hour: Rich amber-bronze accent
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("8B4789"),
-                shadowColor: TimeAdaptiveColor.hex("FFD4A3").opacity(0.3),
-                shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
+                color: TimeAdaptiveColor.hex("B8762E"),  // Amber-bronze
+                shadowColor: TimeAdaptiveColor.hex("FFD4A3").opacity(0.35),
+                shadowRadius: 1.6, shadowX: 0, shadowY: 0.8
             )
         case .dusk:
+            // DUSK FIX: Warm golden-yellow that harmonizes with sunset
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("FFF4C2"),
-                shadowColor: Color.black.opacity(0.3),
-                shadowRadius: 2.0, shadowX: 0, shadowY: 1.0
+                color: TimeAdaptiveColor.hex("FFE8A8"),  // Warm golden-yellow
+                shadowColor: TimeAdaptiveColor.hex("5E3A52").opacity(0.38),
+                shadowRadius: 2.2, shadowX: 0, shadowY: 1.1
             )
         case .evening:
+            // Evening: Cool blue-grey accent
             return TimeAdaptiveTextConfiguration(
-                color: TimeAdaptiveColor.hex("9DB7D8"),
-                shadowColor: TimeAdaptiveColor.hex("293F5C").opacity(0.3),
+                color: TimeAdaptiveColor.hex("A8BDCC"),  // Cool blue-grey
+                shadowColor: TimeAdaptiveColor.hex("1A1612").opacity(0.35),
                 shadowRadius: 1.5, shadowX: 0, shadowY: 0.8
             )
         }
@@ -395,6 +438,22 @@ extension View {
     }
 }
 
+extension TimeOfDay {
+    /// Determines if the background is visually dark for this time period
+    /// regardless of the system Light/Dark mode setting.
+    var isVisuallyDark: Bool {
+        switch self {
+        case .deepNight, .evening, .dusk, .dawn:
+            // These times have dark/saturated backgrounds -> Need Light Text
+            return true
+        case .earlyMorning, .lateMorning, .earlyAfternoon, .lateAfternoon, .goldenHour:
+            // These times have light/pastel backgrounds -> Need Dark Text
+            return false
+        }
+    }
+
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MARK: - USAGE EXAMPLES
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -417,12 +476,12 @@ extension View {
  
  // Page Title
  Text("Profile")
-     .font(.system(size: 36, weight: .bold))
+     .font(.system(size: 23, weight: .bold))
      .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
  
  // Section Header
  Text("Constellations")
-     .font(.system(size: 15, weight: .semibold))
+     .font(.system(size: 16, weight: .semibold))
      .fontDesign(.serif)
      .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
  
@@ -433,12 +492,12 @@ extension View {
  
  // Small Label (YOUR MAIN ISSUE - FIXES THE GRAY TEXT!)
  Text("2/8")
-     .font(.system(size: 11, weight: .medium))
+     .font(.system(size: 12, weight: .medium))
      .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
  
  // Hint Text
  Text("Tap unlocked constellations to read their stories")
-     .font(.system(size: 10, weight: .regular))
+     .font(.system(size: 11, weight: .regular))
      .italic()
      .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
  
@@ -500,7 +559,6 @@ struct TimeAdaptiveTextTestView: View {
     
     var body: some View {
         ZStack {
-            // Your ReverieWeaverBackground would go here
             Rectangle()
                 .fill(LinearGradient(
                     colors: [Color.blue, Color.purple],
@@ -510,7 +568,7 @@ struct TimeAdaptiveTextTestView: View {
             
             VStack(spacing: 20) {
                 Text("Primary Text")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 23, weight: .bold))
                     .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                 
                 Text("Secondary Text")
@@ -518,11 +576,11 @@ struct TimeAdaptiveTextTestView: View {
                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 
                 Text("Subtle Text - 2/8")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
                 
                 Text("Accent Text")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .timeAdaptiveText(colorScheme: colorScheme, style: .accent)
             }
             .padding()

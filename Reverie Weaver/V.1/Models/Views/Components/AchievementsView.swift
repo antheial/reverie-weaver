@@ -1,11 +1,7 @@
 //
-//  AchievementsView.swift
-//  Reverie Weaver
+// AchievementsView.swift (MINIMAL FIX - Exactly Preserves Original)
+// Reverie Weaver
 //
-//  ✨ UPDATED (Pomodoro achievements removed)
-//  - Keeps aesthetic + grid layout
-//  - Uses time-adaptive background/text
-//  - Calls manager without pomodoro dependency
 //
 
 import SwiftUI
@@ -15,15 +11,21 @@ struct AchievementsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
 
-    // Core data sources
     @Query private var completions: [HabitCompletion]
     @Query private var habits: [Habit]
     @Query private var miniChallengeProgress: [MiniChallengeProgress]
+    @Query private var themeWeekProgress: [ThemeWeekProgress]
 
-    // If you store planned rest days, wire them here; empty Set is safe default.
-    // @Query private var restPlans: [RestPlan]
-
-    @StateObject private var achievementManager = AchievementManager.shared
+    @ObservedObject private var achievementManager = AchievementManager.shared
+    
+    @State private var newlyUnlocked: Set<AchievementType> = []
+    @State private var showUnlockAnimation: AchievementType? = nil
+    @State private var animationCleanupTimer: Timer?
+    
+    // Current season color for glow effects
+    private var currentSeasonColor: Color {
+        Color(hex: WeaverJourneyManager.shared.currentSeason.colorHex)
+    }
 
     var body: some View {
         ZStack {
@@ -44,6 +46,7 @@ struct AchievementsView: View {
             }
         }
         .onAppear { updateAchievements() }
+        .onDisappear { cleanupAnimations() }
     }
 
     // MARK: - Header
@@ -72,50 +75,90 @@ struct AchievementsView: View {
 
     // MARK: - Achievement Card
     private func achievementCard(for type: AchievementType) -> some View {
+        let metadata = type.metadata
+        let cardColor = color(for: type)
         let isUnlocked = achievementManager.isUnlocked(type)
         let repeatCount = achievementManager.repeatCount(for: type)
+        let isNewlyUnlocked = newlyUnlocked.contains(type)
+        let unlockDate = getUnlockDate(for: type)
 
         return VStack(spacing: 6) {
             ZStack(alignment: .topTrailing) {
-                Image(systemName: icon(for: type))
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(isUnlocked ? color(for: type) : Color.dynamicSecondaryLabel.opacity(0.3))
-                    .padding(10)
-                    .background(
+                ZStack {
+                    if isNewlyUnlocked {
                         Circle()
-                            .fill(isUnlocked ? color(for: type).opacity(0.15) : Color.dynamicSecondaryLabel.opacity(0.05))
-                    )
+                            .fill(cardColor.opacity(0.3))
+                            .frame(width: 60, height: 60)
+                            .scaleEffect(showUnlockAnimation == type ? 1.8 : 1.0)
+                            .opacity(showUnlockAnimation == type ? 0 : 0.6)
+                    }
+                    
+                    Image(systemName: metadata.iconName)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(isUnlocked ? cardColor : Color.dynamicSecondaryLabel.opacity(0.3))
+                        .padding(10)
+                        .background(
+                            Circle()
+                                .fill(isUnlocked ? cardColor.opacity(0.15) : Color.dynamicSecondaryLabel.opacity(0.05))
+                        )
+                        .scaleEffect(showUnlockAnimation == type ? 1.15 : 1.0)
+                        .shadow(
+                            color: isNewlyUnlocked ? cardColor.opacity(0.5) : .clear,
+                            radius: showUnlockAnimation == type ? 12 : 4,
+                            x: 0,
+                            y: 0
+                        )
+                }
 
                 if isUnlocked, repeatCount > 1, !type.isOneTime {
                     Text("×\(repeatCount)")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Capsule().fill(color(for: type).opacity(0.18)))
+                        .background(Capsule().fill(cardColor.opacity(0.18)))
                         .offset(x: 6, y: -6)
                         .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                 }
             }
 
-            Text(title(for: type))
+            Text(metadata.title)
                 .font(.system(size: 11, weight: .semibold))
                 .fontDesign(.serif)
                 .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                 .multilineTextAlignment(.center)
 
-            Text(description(for: type))
-                .font(.system(size: 9))
+            Text(metadata.description)
+                .font(.system(size: 11))
                 .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.horizontal, 4)
+            
+            // Unlock date (only if unlocked)
+            if isUnlocked, let date = unlockDate {
+                Text(date.formatted(date: .abbreviated, time: .omitted))
+                    .font(.system(size: 10))
+                    .timeAdaptiveText(colorScheme: colorScheme, style: .accent)
+                    .padding(.top, 2)
+            }
         }
         .padding(10)
         .frame(maxWidth: .infinity)
         .reverieCardStyle(colorScheme: colorScheme, cornerRadius: 16)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(isUnlocked ? color(for: type).opacity(0.5) : Color.clear, lineWidth: 1)
+            ZStack {
+                // Standard border
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(
+                        isUnlocked ? cardColor.opacity(0.5) : Color.clear,
+                        lineWidth: 1
+                    )
+                
+                // Seasonal shimmer glow for newly unlocked
+                if isNewlyUnlocked {
+                    SeasonalUnlockGlow(cornerRadius: 16, seasonColor: currentSeasonColor)
+                }
+            }
         )
         .opacity(isUnlocked ? 1 : 0.6)
         .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isUnlocked)
@@ -123,109 +166,165 @@ struct AchievementsView: View {
 
     // MARK: - Update Achievements
     private func updateAchievements() {
-        // let planned = Set(restPlans.map { Calendar.current.startOfDay(for: $0.date) })
+        achievementManager.attachContext(modelContext)
+        
+        let previouslyUnlocked = Set(AchievementType.allCases.filter { achievementManager.isUnlocked($0) })
+        
+        // TODO: Wire up planned rest days when RestPlan model is implemented
         let planned = Set<Date>()
 
-        achievementManager.attachContext(modelContext)
         achievementManager.checkAchievements(
             completions: completions,
             habits: habits,
             miniChallengeProgress: miniChallengeProgress,
+            themeWeekProgress: themeWeekProgress,
             plannedRestDays: planned
         )
+        
+        let currentlyUnlocked = Set(AchievementType.allCases.filter { achievementManager.isUnlocked($0) })
+        let justUnlocked = currentlyUnlocked.subtracting(previouslyUnlocked)
+        
+        if !justUnlocked.isEmpty {
+            handleNewUnlocks(justUnlocked)
+        }
     }
-
-    // MARK: - Card Helpers (Pomodoro cases removed)
-    private func icon(for type: AchievementType) -> String {
-        switch type {
-        case .firstHabit: return "sparkles"
-        case .perfectDay: return "checkmark.seal.fill"
-        case .streak7: return "flame.fill"
-        case .streak30: return "flame.circle.fill"
-        case .earlyBird: return "sunrise.fill"
-        case .milestone10: return "leaf.fill"
-        case .milestone50: return "circle.grid.cross.fill"
-        case .milestone100: return "trophy.fill"
-        case .weekWarrior: return "calendar"
-        case .monthMaster: return "calendar.circle.fill"
-        case .consistency: return "hourglass"
-        case .perfectMorning: return "sunrise"
-        case .nightOwl: return "moon.stars.fill"
-        case .evenSplit: return "circle.lefthalf.filled"
-        case .p50Kickoff: return "sparkles"
-        case .miniChallengeFinisher: return "flag.checkered"
-        case .gracefulReturn: return "arrow.uturn.left.circle"
-        case .mindfulRest: return "bed.double"
+    
+    // MARK: - Animation Management
+    private func handleNewUnlocks(_ unlocked: Set<AchievementType>) {
+        guard !unlocked.isEmpty else { return }
+        
+        animationCleanupTimer?.invalidate()
+        
+        newlyUnlocked = unlocked
+        if let firstUnlocked = unlocked.first {
+            triggerUnlockAnimation(for: firstUnlocked)
+        }
+        
+        animationCleanupTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            withAnimation {
+                self.newlyUnlocked.removeAll()
+            }
         }
     }
 
-    private func title(for type: AchievementType) -> String {
-        switch type {
-        case .firstHabit: return "First Step"
-        case .perfectDay: return "Perfect Day"
-        case .streak7: return "7-Day Streak"
-        case .streak30: return "30-Day Streak"
-        case .earlyBird: return "Early Bird"
-        case .milestone10: return "10 Threads"
-        case .milestone50: return "50 Threads"
-        case .milestone100: return "100 Threads"
-        case .weekWarrior: return "Week Warrior"
-        case .monthMaster: return "Month Master"
-        case .consistency: return "Consistency"
-        case .perfectMorning: return "Perfect Morning"
-        case .nightOwl: return "Night Owl"
-        case .evenSplit: return "Even Split"
-        case .p50Kickoff: return "Kickoff P50"
-        case .miniChallengeFinisher: return "Focus Sprint Finisher"
-        case .gracefulReturn: return "Graceful Return"
-        case .mindfulRest: return "Mindful Rest"
+    private func triggerUnlockAnimation(for type: AchievementType) {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.6)) {
+            showUnlockAnimation = type
+        }
+        ReverieHaptics.successFeedback()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation {
+                if self.showUnlockAnimation == type {
+                    self.showUnlockAnimation = nil
+                }
+            }
         }
     }
-
-    private func description(for type: AchievementType) -> String {
-        switch type {
-        case .firstHabit: return "Start your first habit journey."
-        case .perfectDay: return "Complete all habits in a single day."
-        case .streak7: return "Maintain a 7-day completion streak."
-        case .streak30: return "Sustain discipline for 30 days straight."
-        case .earlyBird: return "Complete a habit before 8 AM."
-        case .milestone10: return "Weave 10 total threads."
-        case .milestone50: return "Weave 50 total threads."
-        case .milestone100: return "Weave 100 total threads."
-        case .weekWarrior: return "Complete every habit for one week."
-        case .monthMaster: return "Complete 75% of habits for one month."
-        case .consistency: return "Complete habits for 21+ consecutive days."
-        case .perfectMorning: return "Finish any two habits before 10am."
-        case .nightOwl: return "Complete a habit after 10pm."
-        case .evenSplit: return "One morning habit and one evening habit in a day."
-        case .p50Kickoff: return "Complete all 7 Project 50 habits (lifetime)."
-        case .miniChallengeFinisher: return "Finish a 7-day mini challenge."
-        case .gracefulReturn: return "Log a completion after a 3-day break."
-        case .mindfulRest: return "Plan a rest day, then complete 4+ habits next day."
-        }
+    
+    private func cleanupAnimations() {
+        animationCleanupTimer?.invalidate()
+        animationCleanupTimer = nil
+        newlyUnlocked.removeAll()
+        showUnlockAnimation = nil
     }
 
+    // MARK: - Card Helpers
+    
+    private func getUnlockDate(for type: AchievementType) -> Date? {
+        guard achievementManager.isUnlocked(type) else { return nil }
+        
+        do {
+            let predicate = #Predicate<Achievement> { $0.type == type.rawValue }
+            let desc = FetchDescriptor<Achievement>(predicate: predicate)
+            let achievements = try modelContext.fetch(desc)
+            return achievements.first?.earnedDate
+        } catch {
+            print("❌ Failed to fetch unlock date: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
     private func color(for type: AchievementType) -> Color {
         switch type {
+        // First steps & beginnings
         case .firstHabit: return .paleMauve
+        case .p50Kickoff: return Color(hex: "C8B8DB") // Lavender - beginning of journey
+        
+        // Perfect completions
         case .perfectDay: return .sageGreen
-        case .streak7: return .terracottaRose
-        case .streak30: return .dustyBlue
-        case .earlyBird: return .sunriseOrange
-        case .milestone10: return .sageGreen
-        case .milestone50: return .dustyBlue
-        case .milestone100: return .paleMauve
-        case .weekWarrior: return .sageGreen
-        case .monthMaster: return .dustyBlue
-        case .consistency: return .terracottaRose
         case .perfectMorning: return .sunriseOrange
+        case .weekWarrior: return Color(hex: "88B5A3") // Deeper sage - bigger achievement
+        case .monthMaster: return Color(hex: "9B7FA5") // Deep purple - mastery
+        
+        // Streaks (progression: warm to cool)
+        case .streak7: return .terracottaRose
+        case .streak30: return Color(hex: "8B7B9B") // Muted purple - longer commitment
+        case .consistency: return Color(hex: "A67C7C") // Deeper terracotta - 21 days
+        
+        // Milestones (progression: light to rich)
+        case .milestone10: return Color(hex: "B8C9A3") // Light sage
+        case .milestone50: return Color(hex: "7A9BB8") // Medium dusty blue
+        case .milestone100: return Color(hex: "D4A574") // Gold-ish - major milestone
+        
+        // Time-based
+        case .earlyBird: return .sunriseOrange
         case .nightOwl: return .dustyBlue
-        case .evenSplit: return .paleMauve
-        case .p50Kickoff: return .paleMauve
-        case .miniChallengeFinisher: return .sageGreen
+        case .evenSplit: return Color(hex: "B89B9B") // Warm neutral - balance
+        
+        // Project 50 series (progression theme)
+        case .p50Complete: return Color(hex: "7AB88A") // Vibrant green - completion
+        case .p50MasteryAchieved: return Color(hex: "E8A87C") // Rich orange - mastery
+        case .p50RepeatChampion: return Color(hex: "9B8BC7") // Rich lavender - repeat excellence
+        
+        // Challenges
+        case .miniChallengeFinisher: return Color(hex: "8DB89B") // Fresh green
+        case .miniChallenge3Complete: return Color(hex: "7AA38B") // Deeper green - multiple completions
+        case .fullProgramComplete: return Color(hex: "9B7FA5") // Purple - program mastery
+        case .allTiersExplored: return Color(hex: "C8A87C") // Warm gold - exploration
+        
+        // Recovery & flexibility
         case .gracefulReturn: return .terracottaRose
-        case .mindfulRest: return .dustyBlue
+        case .mindfulRest: return Color(hex: "A3B5C8") // Calm blue
+        case .bonusMaster: return Color(hex: "E8B887") // Warm gold
+        
+        // Theme Week achievements
+        case .themeWeekComplete: return Color(hex: "C8B8DB") // Lavender
+        case .flexibleRhythm: return Color(hex: "B8A3C8") // Deeper lavender
+        case .gentleConsistency: return Color(hex: "9B87AB") // Deep purple
+        case .allBlooms: return Color(hex: "E8C87C") // Bright gold
+        case .honoringEnergy: return Color(hex: "7AA38B") // Forest green
+        
+        // Connection Clarity series
+        case .connectionClarityFirstComplete: return Color(hex: "8BA3B8") // Communication blue
+        case .connectionClarityFullReflection: return Color(hex: "A89BC8") // Reflective purple
+        case .connectionClarityRepeat: return Color(hex: "C89BAB") // Warm rose - mastery
         }
+    }
+}
+
+// MARK: - Seasonal Unlock Glow Component
+
+struct SeasonalUnlockGlow: View {
+    @State private var isPulsing = false
+    let cornerRadius: CGFloat
+    let seasonColor: Color
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .strokeBorder(
+                seasonColor.opacity(isPulsing ? 0.8 : 0.2),
+                lineWidth: 2
+            )
+            .shadow(
+                color: seasonColor.opacity(isPulsing ? 0.6 : 0.1),
+                radius: isPulsing ? 8 : 2
+            )
+            .onAppear {
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    isPulsing = true
+                }
+            }
     }
 }
 

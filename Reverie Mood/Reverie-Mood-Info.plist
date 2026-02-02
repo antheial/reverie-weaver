@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>zh-Hans</string>
+	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Reverie uses the microphone to record voice memos that capture your thoughts and feelings. Your recordings are stored privately on your device.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Reverie accesses your photo library to let you attach meaningful images to your journal entries. Photos are stored privately within the app.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Reverie uses the camera to capture moments you want to include in your journal entries. Photos are stored privately within the app.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Reverie uses speech recognition to transcribe your spoken words into journal entries, making it easier to capture your thoughts.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Reverie sends you gentle daily reminders to check in with your emotional well-being. These notifications help you build a consistent journaling practice.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+</dict>
+</plist>

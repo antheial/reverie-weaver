@@ -4,12 +4,6 @@
 //
 //  Created by Antheia Li on 10/25/25.
 //
-
-
-//
-// StatCard.swift
-// Reverie Weaver
-//
 // Reusable stat card component for displaying metrics
 // Used in ProfileView and other stat displays
 //

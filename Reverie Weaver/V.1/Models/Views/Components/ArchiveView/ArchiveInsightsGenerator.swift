@@ -5,7 +5,7 @@
 // Smart context-aware insights generator for archive view
 // Provides encouraging, specific, and actionable insights
 // based on user's weekly performance patterns
-// ✅ UPDATED: Now includes Mini Challenge progress tracking
+//
 //
 
 import Foundation
@@ -32,25 +32,24 @@ class ArchiveInsightsGenerator {
         bestDay: (name: String, count: Int)?,
         consistencyRate: Double,
         hasActiveChallenge: Bool,
-        // ✅ NEW: Mini Challenge parameters
         miniChallengeProgress: MiniChallengeProgress? = nil
     ) -> [ArchiveInsight] {
 
         var insights: [ArchiveInsight] = []
 
-        // ✅ NEW: Mini Challenge Completed (HIGHEST PRIORITY!)
         if let progress = miniChallengeProgress, progress.isCompleted {
             insights.append(ArchiveInsight(
                 icon: "bolt.fill",
                 message: "🎉 You completed the \(progress.challengeTitle)! 7 days of consistent effort shows real transformation.",
-                color: "6CA9C3", // dustyBlue
+                color: "6CA9C3",
                 priority: 105
             ))
         }
 
-        // ✅ NEW: Mini Challenge Active & Progressing Well (5+ days)
+        // Mini Challenge Active & Progressing Well (5+ days)
         if let progress = miniChallengeProgress,
            !progress.isCompleted,
+           !progress.isArchived,
            progress.daysCompleted >= 5 {
             let daysLeft = 7 - progress.daysCompleted
             insights.append(ArchiveInsight(
@@ -61,9 +60,10 @@ class ArchiveInsightsGenerator {
             ))
         }
 
-        // ✅ NEW: Mini Challenge Active & Making Progress (3-4 days)
+        // Mini Challenge Active & Making Progress (3-4 days)
         if let progress = miniChallengeProgress,
            !progress.isCompleted,
+           !progress.isArchived,
            progress.daysCompleted >= 3,
            progress.daysCompleted < 5 {
             insights.append(ArchiveInsight(
@@ -74,9 +74,10 @@ class ArchiveInsightsGenerator {
             ))
         }
 
-        // ✅ NEW: Mini Challenge Just Started (1-2 days)
+        // Mini Challenge Just Started (1-2 days)
         if let progress = miniChallengeProgress,
            !progress.isCompleted,
+           !progress.isArchived,
            progress.daysCompleted > 0,
            progress.daysCompleted < 3 {
             insights.append(ArchiveInsight(
@@ -92,7 +93,7 @@ class ArchiveInsightsGenerator {
             insights.append(ArchiveInsight(
                 icon: "star.fill",
                 message: "Perfect week! You completed every habit. This is powerful momentum—celebrate it!",
-                color: "67B7A4", // sageGreen
+                color: "67B7A4",
                 priority: 100
             ))
         }
@@ -113,7 +114,7 @@ class ArchiveInsightsGenerator {
             insights.append(ArchiveInsight(
                 icon: "checkmark.seal.fill",
                 message: "Strong week with \(Int(completionRate * 100))% completion. You're building powerful momentum!",
-                color: "6CA9C3", // dustyBlue
+                color: "6CA9C3",
                 priority: 90
             ))
         }
@@ -124,7 +125,7 @@ class ArchiveInsightsGenerator {
                 insights.append(ArchiveInsight(
                     icon: "flame.fill",
                     message: "\(currentStreak) day streak! You've built a genuine practice. This is transformation.",
-                    color: "E46A6A", // terracottaRose
+                    color: "E46A6A",
                     priority: 95
                 ))
             } else if currentStreak % 7 == 0 {
@@ -173,7 +174,7 @@ class ArchiveInsightsGenerator {
             insights.append(ArchiveInsight(
                 icon: "calendar.badge.plus",
                 message: "\(best.name) was your power day with \(best.count) habits! Consider scheduling important practices then.",
-                color: "9B7EBD", // paleMauve
+                color: "9B7EBD",
                 priority: 70
             ))
         }
@@ -235,7 +236,7 @@ class ArchiveInsightsGenerator {
     // MARK: - Helper: Calculate Consistency Rate
 
     static func calculateConsistencyRate(
-        dailyCompletions: [Int], // Array of completion counts per day
+        dailyCompletions: [Int],
         habitCount: Int
     ) -> Double {
         guard habitCount > 0 else { return 0 }
@@ -259,7 +260,7 @@ class ArchiveInsightsGenerator {
             }
 
             let formatter = DateFormatter()
-            formatter.dateFormat = "EEEE" // Full day name
+            formatter.dateFormat = "EEEE"
             let dayName = formatter.string(from: day)
 
             dayCounts.append((name: dayName, count: dayCompletions.count))
@@ -268,19 +269,16 @@ class ArchiveInsightsGenerator {
         return dayCounts.max(by: { $0.count < $1.count })
     }
 
-    // ✅ NEW: Helper to find strongest category (excluding mini challenge habits)
     static func findStrongestCategory(
         completions: [HabitCompletion],
         habits: [Habit]
     ) -> String? {
-        // Filter out mini challenge habits
         let regularHabits = habits.filter { habit in
             !(habit.programTag?.starts(with: "C7-") ?? false)
         }
 
         guard !regularHabits.isEmpty else { return nil }
 
-        // Count completions by category
         var categoryCount: [String: Int] = [:]
 
         for completion in completions {
@@ -290,52 +288,6 @@ class ArchiveInsightsGenerator {
             }
         }
 
-        // Find category with most completions
         return categoryCount.max(by: { $0.value < $1.value })?.key
     }
 }
-
-// MARK: - Usage Example
-
-/*
- // In your WeeklyArchiveView or InsightsCarousel:
-
- private func generateInsights() -> [ArchiveInsight] {
-     let completionRate = Double(weekCompletions.count) / Double(max(habits.count * 7, 1))
-     let lastWeekRate = calculateLastWeekRate() // Your implementation
-     let currentStreak = calculateCurrentStreak() // Your implementation
-     let isPerfect = weekCompletions.count == habits.count * 7 && habits.count > 0
-
-     let dailyCompletions = weekDays.map { day in
-         weekCompletions.filter {
-             Calendar.current.isDate($0.completedAt, inSameDayAs: day)
-         }.count
-     }
-
-     let consistency = ArchiveInsightsGenerator.calculateConsistencyRate(
-         dailyCompletions: dailyCompletions,
-         habitCount: habits.count
-     )
-
-     let bestDay = ArchiveInsightsGenerator.findBestDay(
-         weekDays: weekDays,
-         completions: weekCompletions
-     )
-
-     // ✅ NEW: Get active mini challenge progress
-     let activeMiniChallenge = miniChallengeProgress.first { !$0.isCompleted }
-
-     return ArchiveInsightsGenerator.generateInsights(
-         completionRate: completionRate,
-         weekCompletions: weekCompletions.count,
-         totalHabitsCount: habits.count * 7,
-         lastWeekRate: lastWeekRate,
-         currentStreak: currentStreak,
-         isPerfectWeek: isPerfect,
-         bestDay: bestDay,
-         consistencyRate: consistency,
-         hasActiveChallenge: hasAnyActiveChallenge(),
-         miniChallengeProgress: activeMiniChallenge // ✅ NEW parameter
-     )
- }
- */

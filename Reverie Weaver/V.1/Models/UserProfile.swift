@@ -1,7 +1,4 @@
 //
-// UserProfile.swift
-// ReverieWeaver
-//
 // User profile and settings
 //
 
@@ -14,17 +11,20 @@ final class UserProfile {
     var displayName: String
     var personalMotto: String
     var weekStartsOnSunday: Bool
+    var weeklyRestDayLimit: Int
     var createdAt: Date
     
     init(
         displayName: String = "Weaver",
         personalMotto: String = "",
-        weekStartsOnSunday: Bool = true
+        weekStartsOnSunday: Bool = true,
+        weeklyRestDayLimit: Int = 2
     ) {
         self.id = UUID()
         self.displayName = displayName
         self.personalMotto = personalMotto
         self.weekStartsOnSunday = weekStartsOnSunday
+        self.weeklyRestDayLimit = weeklyRestDayLimit
         self.createdAt = Date()
     }
 }

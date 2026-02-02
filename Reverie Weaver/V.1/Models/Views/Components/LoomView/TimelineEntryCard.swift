@@ -3,19 +3,20 @@
 // TimelineEntryCard.swift
 // ReverieWeaver
 //
+// Multi-photo reflection support
+//
 import SwiftUI
 import SwiftData
 
-struct  TimelineEntryCard: View {
+struct TimelineEntryCard: View {
     @Environment(\.colorScheme) private var colorScheme
-     let  completion: HabitCompletion
-     let  habit: Habit
-     let  onTap: () -> Void
+    let completion: HabitCompletion
+    let habit: Habit
+    let onTap: () -> Void
     
-     var  body:  some  View {
+    var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 12) {
-                // Header with habit info
                 HStack(spacing: 12) {
                     Circle()
                         .fill(Color(hex: habit.colorHex))
@@ -35,16 +36,26 @@ struct  TimelineEntryCard: View {
                     
                     Spacer()
                     
-                     if   let  reflection = completion.reflection {
-                        // Show indicators if there's a reflection
+                    if let reflection = completion.reflection {
                         HStack(spacing: 8) {
-                             if  reflection.photoData !=  nil  {
-                                Image(systemName: "photo.fill")
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(Color.dustyBlue)
+                            // Check for photos array instead of single photo
+                            if !reflection.photosData.isEmpty {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "photo.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Color.dustyBlue)
+                                    
+                                    // Show count if multiple photos
+                                    if reflection.photosData.count > 1 {
+                                        Text("\(reflection.photosData.count)")
+                                            .font(.system(size: 11, weight: .medium))
+                                            .fontDesign(.serif)
+                                            .foregroundStyle(Color.dustyBlue)
+                                    }
+                                }
                             }
                             
-                             if  reflection.isFavorite {
+                            if reflection.isFavorite {
                                 Image(systemName: "heart.fill")
                                     .font(.system(size: 11))
                                     .foregroundStyle(Color.paleMauve)
@@ -54,7 +65,7 @@ struct  TimelineEntryCard: View {
                                 .font(.system(size: 11))
                                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         }
-                    }  else  {
+                    } else {
                         HStack(spacing: 6) {
                             Text("Add reflection")
                                 .font(.system(size: 11, weight: .regular))
@@ -68,7 +79,7 @@ struct  TimelineEntryCard: View {
                 }
                 
                 // Reflection preview if exists
-                 if   let  reflection = completion.reflection {
+                if let reflection = completion.reflection {
                     Divider()
                     
                     VStack(alignment: .leading, spacing: 8) {
@@ -84,7 +95,7 @@ struct  TimelineEntryCard: View {
                         }
                         
                         // Notes preview
-                         if  !reflection.notes.isEmpty {
+                        if !reflection.notes.isEmpty {
                             Text(reflection.notes)
                                 .font(.system(size: 11, weight: .regular))
                                 .fontDesign(.serif)
@@ -92,14 +103,35 @@ struct  TimelineEntryCard: View {
                                 .lineLimit(2)
                         }
                         
-                        // Photo preview
-                         if   let  photoData = reflection.photoData,  let  uiImage = UIImage(data: photoData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        // UPDATED: Photo preview with multi-photo support
+                        if !reflection.photosData.isEmpty {
+                            // Show first photo as preview
+                            if let firstPhotoData = reflection.photosData.first,
+                               let uiImage = UIImage(data: firstPhotoData) {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 80)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    
+                                    // Show "+X more" badge if multiple photos
+                                    if reflection.photosData.count > 1 {
+                                        Text("+\(reflection.photosData.count - 1)")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .fontDesign(.serif)
+                                            .foregroundStyle(.white)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                Capsule()
+                                                    .fill(Color.black.opacity(0.6))
+                                            )
+                                            .padding(8)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

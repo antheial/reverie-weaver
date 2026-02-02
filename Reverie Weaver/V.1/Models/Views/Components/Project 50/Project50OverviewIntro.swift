@@ -5,14 +5,6 @@
 // Created by Antheia Li on 10/23/25.
 //
 
-//
-// Project50OverviewIntro.swift
-// Reverie Weaver
-// Stage 1 -- Overview Intro for Project 50 Program
-// Shows philosophy, features, and 8 habit previews
-// "Start 50-Day Journey" → opens Project50OverviewHabits for confirmation
-//
-
 import SwiftUI
 import SwiftData
 
@@ -26,22 +18,28 @@ struct Project50OverviewIntro: View {
     
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 ReverieWeaverBackground()
                 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 28) {
                         heroOrbSection
-                        philosophySection
-                        scienceSection
+                        philosophicalQuote
                         includedHabitsSection
-                        adhdFeaturesSection
+                        easyStartFeaturesSection
                         tipsSection
+                        philosophySection
                     }
-                    .padding(.bottom, 120)
+                    .padding(.bottom, 100)
+                    .padding(.top, 60)
                 }
+                            HStack {
+                                Spacer()
+                                closeButton
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 10)
             }
-            .toolbar { closeButton }
             .overlay(alignment: .bottomTrailing) { startJourneyButton }
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showOverviewHabits) {
@@ -50,10 +48,6 @@ struct Project50OverviewIntro: View {
         }
     }
 }
-
-//
-// MARK: - Subsections
-//
 
 private extension Project50OverviewIntro {
     
@@ -71,7 +65,7 @@ private extension Project50OverviewIntro {
     }
     
     var philosophySection: some View {
-        OpenEditorialSection(  // ← Changed
+        OpenEditorialSection(
             icon: "star.fill",
             iconColor: .paleMauve,
             title: localization.localize("project50.section.philosophyTitle"),
@@ -80,8 +74,48 @@ private extension Project50OverviewIntro {
         .padding(.horizontal, 24)
     }
 
+    var philosophicalQuote: some View {
+        VStack(spacing: 12) {
+            // Decorative divider
+            HStack(spacing: 12) {
+                Rectangle()
+                    .fill(Color.dynamicSecondaryLabel.opacity(0.2))
+                    .frame(height: 0.5)
+                    .frame(maxWidth: .infinity)
+                
+                Image(systemName: "sparkle")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.paleMauve.opacity(0.6))
+                
+                Rectangle()
+                    .fill(Color.dynamicSecondaryLabel.opacity(0.2))
+                    .frame(height: 0.5)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 40)
+            
+            // The quote
+            Text("Momentum isn't built in giant leaps — it's the compound effect of 50 small, deliberate days. Structure creates freedom.")
+                .font(.custom("Georgia", size: 14))
+                .fontWeight(.light)
+                .italic()
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                .padding(.horizontal, 32)
+            
+            // Attribution
+            Text("— REVERIE WEAVER PHILOSOPHY")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(1.2)
+                .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
+                .opacity(0.6)
+        }
+        .padding(.vertical, 8)
+    }
+
     var scienceSection: some View {
-        OpenEditorialSection(  // ← Changed
+        OpenEditorialSection(
             icon: "brain.head.profile",
             iconColor: .dustyBlue,
             title: localization.localize("project50.section.scienceTitle"),
@@ -91,17 +125,17 @@ private extension Project50OverviewIntro {
     }
     
     // MARK: - Included Habits (8 habit preview cards, Unified Section Wrappers)
+    
     var includedHabitsSection: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text("INCLUDED HABITS")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .tracking(1)
-                .adaptiveSecondaryText(colorScheme: colorScheme)
+                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                 .padding(.horizontal, 24)
             
             // 🌅 Morning Anchors
             VStack(alignment: .leading, spacing: 10) {
-                // Section header
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Image(systemName: "sunrise.fill")
@@ -109,16 +143,15 @@ private extension Project50OverviewIntro {
                             .foregroundStyle(Color.paleMauve.opacity(0.9))
                         Text("Morning Anchors")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.dynamicLabel)
+                             .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     }
                     Text("Start before you think — create reliable morning cues that reduce friction and decision fatigue.")
-                        .font(.system(size: 12))
-                        .adaptiveSecondaryText(colorScheme: colorScheme)
+                        .font(.system(size: 13))
+                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         .lineSpacing(3)
                 }
                 Divider().padding(.vertical, 2).opacity(0.2)
                 
-                // Habits inside unified border
                 VStack(spacing: 10) {
                     ForEach(morningHabits, id: \.name) { habit in
                         IncludedHabitPreviewCard(
@@ -133,15 +166,7 @@ private extension Project50OverviewIntro {
                 }
             }
             .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35))
-                    .shadow(color: Color.shadowColor.opacity(0.12), radius: 5, y: 2)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-            )
+            .reverieCardStyle(colorScheme: colorScheme)
             .padding(.horizontal, 24)
             
             
@@ -154,11 +179,11 @@ private extension Project50OverviewIntro {
                             .foregroundStyle(Color.sageGreen.opacity(0.9))
                         Text("Body & Energy")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.dynamicLabel)
+                             .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     }
                     Text("Movement and nourishment regulate dopamine, mood, and energy — the foundation of focus.")
-                        .font(.system(size: 12))
-                        .adaptiveSecondaryText(colorScheme: colorScheme)
+                        .font(.system(size: 13))
+                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         .lineSpacing(3)
                 }
                 Divider().padding(.vertical, 2).opacity(0.2)
@@ -177,15 +202,7 @@ private extension Project50OverviewIntro {
                 }
             }
             .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35))
-                    .shadow(color: Color.shadowColor.opacity(0.12), radius: 5, y: 2)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-            )
+            .reverieCardStyle(colorScheme: colorScheme)
             .padding(.horizontal, 24)
             
             
@@ -198,11 +215,11 @@ private extension Project50OverviewIntro {
                             .foregroundStyle(Color.dustyBlue.opacity(0.9))
                         Text("Cognitive Anchors")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.dynamicLabel)
+                             .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     }
                     Text("Feed your mind, not the noise — learn and focus through intentional attention.")
-                        .font(.system(size: 12))
-                        .adaptiveSecondaryText(colorScheme: colorScheme)
+                        .font(.system(size: 13))
+                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         .lineSpacing(3)
                 }
                 Divider().padding(.vertical, 2).opacity(0.2)
@@ -221,15 +238,7 @@ private extension Project50OverviewIntro {
                 }
             }
             .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35))
-                    .shadow(color: Color.shadowColor.opacity(0.12), radius: 5, y: 2)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-            )
+            .reverieCardStyle(colorScheme: colorScheme)
             .padding(.horizontal, 24)
             
             
@@ -242,11 +251,11 @@ private extension Project50OverviewIntro {
                             .foregroundStyle(Color.terracottaRose.opacity(0.9))
                         Text("Reflection")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.dynamicLabel)
+                             .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     }
                     Text("End the day on purpose — externalize thoughts, calm the mind, and reinforce self-awareness.")
-                        .font(.system(size: 12))
-                        .adaptiveSecondaryText(colorScheme: colorScheme)
+                        .font(.system(size: 13))
+                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         .lineSpacing(3)
                 }
                 Divider().padding(.vertical, 2).opacity(0.2)
@@ -265,25 +274,17 @@ private extension Project50OverviewIntro {
                 }
             }
             .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(Color.white.opacity(colorScheme == .dark ? 0.08 : 0.35))
-                    .shadow(color: Color.shadowColor.opacity(0.12), radius: 5, y: 2)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 22)
-                    .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-            )
+            .reverieCardStyle(colorScheme: colorScheme)
             .padding(.horizontal, 24)
         }
     }
     
-    // MARK: ADHD-Friendly Features
-    var adhdFeaturesSection: some View {
+    // MARK: Easy-Start Design Features
+    var easyStartFeaturesSection: some View {
         SectionCard(
             icon: "checkmark.seal.fill",
             iconColor: .terracottaRose,
-            title: "ADHD-Friendly Features",
+            title: "Easy-Start Design",
             content: nil,
             rows: [
                 ("arrow.down.circle.fill", localization.localize("project50.feature.lowActivation")),
@@ -312,22 +313,9 @@ private extension Project50OverviewIntro {
     }
     
     // MARK: Close Button
-    var closeButton: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.35))
-                        .frame(width: 32, height: 32)
-                        .shadow(color: Color.shadowColor, radius: 4, y: 2)
-                    Circle()
-                        .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                        .frame(width: 32, height: 32)
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.dynamicSecondaryLabel)
-                }
-            }
+    var closeButton: some View {
+        GlassCloseButton {
+            dismiss()
         }
     }
     
@@ -456,13 +444,13 @@ private struct IncludedHabitPreviewCard: View {
                 ZStack {
                     Circle()
                         .fill(categoryColor.opacity(0.15))
-                        .frame(width: 28, height: 28)
+                        .frame(width: 36, height: 36)
                         .overlay(
                             Circle()
                                 .strokeBorder(categoryColor.opacity(0.3), lineWidth: 1)
                         )
                     Image(systemName: icon)
-                        .font(.system(size: 18))
+                        .font(.system(size: 16))
                         .foregroundStyle(categoryColor)
                 }
                 
@@ -470,17 +458,17 @@ private struct IncludedHabitPreviewCard: View {
                     Text(name)
                         .font(.system(size: 13, weight: .semibold))
                         .fontDesign(.serif)
-                        .foregroundStyle(Color.dynamicLabel)
+                         .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     
                     HStack(spacing: 8) {
                         Label(category, systemImage: "tag.fill")
-                            .font(.system(size: 10, weight: .medium))
-                            .adaptiveSecondaryText(colorScheme: colorScheme)
+                            .font(.system(size: 11, weight: .medium))
+                             .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         Text("•")
                             .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.5))
                         Text(estimatedTime)
-                            .font(.system(size: 10, weight: .medium))
-                            .adaptiveSecondaryText(colorScheme: colorScheme)
+                            .font(.system(size: 11, weight: .medium))
+                             .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                     }
                 }
                 Spacer()
@@ -488,7 +476,7 @@ private struct IncludedHabitPreviewCard: View {
             
             Text(description)
                 .font(.system(size: 12, weight: .regular))
-                .adaptiveSecondaryText(colorScheme: colorScheme)
+                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -525,13 +513,13 @@ private struct SectionCard: View {
                     .foregroundStyle(iconColor)
                 Text(title)
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color.dynamicLabel)
+                     .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
             }
             
             if let content = content {
                 Text(content)
-                    .font(.system(size: 12))
-                    .adaptiveSecondaryText(colorScheme: colorScheme)
+                    .font(.system(size: 13))
+                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                     .lineSpacing(4)
             }
             
@@ -540,11 +528,11 @@ private struct SectionCard: View {
                     ForEach(rows, id: \.0) { row in
                         HStack(spacing: 8) {
                             Image(systemName: row.0)
-                                .font(.system(size: 12))
+                                .font(.system(size: 13))
                                 .foregroundStyle(iconColor.opacity(0.85))
                             Text(row.1)
-                                .font(.system(size: 12))
-                                .adaptiveSecondaryText(colorScheme: colorScheme)
+                                .font(.system(size: 13))
+                                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         }
                     }
                 }

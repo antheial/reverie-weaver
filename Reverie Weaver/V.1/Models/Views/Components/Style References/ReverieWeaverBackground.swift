@@ -3,8 +3,9 @@ import SwiftUI
 // MARK: - Reverie Weaver Background Component
 struct ReverieWeaverBackground: View {
     @State private var currentHour: Int = Calendar.current.component(.hour, from: Date())
+    @State private var hourUpdateTimer: Timer?
     @Environment(\.colorScheme) var colorScheme
-    
+
     var body: some View {
         ZStack {
             // Time-based gradient
@@ -14,9 +15,8 @@ struct ReverieWeaverBackground: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
-            // Real paper texture overlay (AUTHENTIC)
-            // Add the paper texture image to Assets.xcassets as "paper-texture"
+
+            // Real paper texture overlay
             Image("paper-texture")
                 .resizable(resizingMode: .tile)
                 .contrast(1.15)   // boosts paper fibers
@@ -25,34 +25,111 @@ struct ReverieWeaverBackground: View {
                 .opacity(colorScheme == .dark ? 0.33 : 0.33)
                 .allowsHitTesting(false)
                 .ignoresSafeArea()
-            
-            // Film grain overlay (Core Image noise filter - authentic film grain)
+
+            // Film grain overlay
             NoiseOverlayView()
                 .opacity(colorScheme == .dark ? 0.15 : 0.15)
                 .blendMode(.softLight)
                 .allowsHitTesting(false)
                 .ignoresSafeArea()
+
+            // Adaptive header scrim for text readability (3-9 PM, light mode only)
+            if colorScheme == .light && needsHeaderScrim() {
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.black.opacity(headerScrimOpacity()), location: 0),
+                        .init(color: Color.black.opacity(headerScrimOpacity() * 0.5), location: 0.3),
+                        .init(color: Color.clear, location: 0.55)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
         }
         .onAppear {
+            // Immediately update to current hour when view appears
+            currentHour = Calendar.current.component(.hour, from: Date())
+
+            // Only create timer if one doesn't exist
+            guard hourUpdateTimer == nil else { return }
+
             // Update hour every minute
-            Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            hourUpdateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
                 currentHour = Calendar.current.component(.hour, from: Date())
             }
         }
+        .onDisappear {
+            // Invalidate timer to prevent memory leak
+            hourUpdateTimer?.invalidate()
+            hourUpdateTimer = nil
+        }
     }
     
+    // MARK: - Header Scrim (for text readability during bright periods)
+
+    /// Determines if a header scrim should be shown (3-9 PM)
+    private func needsHeaderScrim() -> Bool {
+        switch currentHour {
+        case 15..<17, 17..<19, 19..<21:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Returns the appropriate scrim opacity based on time period
+    private func headerScrimOpacity() -> Double {
+        switch currentHour {
+        case 15..<17:
+            return 0.06  // Late Afternoon - subtle
+        case 17..<19:
+            return 0.08  // Golden Hour - slightly stronger for warm amber
+        case 19..<21:
+            return 0.05  // Dusk - lighter, already has better contrast
+        default:
+            return 0
+        }
+    }
+
+    // MARK: - Time-Based Colors
+
     private func timeBasedColors() -> [Color] {
            // OVERRIDE: If system is in dark mode, use dark palette regardless of time
-           if colorScheme == .dark {
-               return [
-                Color(hex: "0F1419"), // Deep space black
-                Color(hex: "1B2838"), // Midnight blue
-                Color(hex: "2C3E50")  // Slate blue
-                //Color(hex: "1C1C1E"), // True black (iOS style)
-                //Color(hex: "2C2C2E"), // Dark grey
-                //Color(hex: "3A3A3C")  // Medium grey
-               ]
-           }
+        if colorScheme == .dark {
+            // Use the same currentHour state as light mode for consistency
+            let hour = currentHour
+            
+            switch hour {
+            case 0..<5:
+                // Deep Night - Warm dark tones
+                return [
+                    Color(hex: "1A1612"),  // Deep warm near-black
+                    Color(hex: "2C2520"),  // Deep warm grey
+                    Color(hex: "3D3530"),  // Muted warm slate
+                    Color(hex: "4A3F35")   // Subtle warm brown
+                ]
+                
+            case 21..<24:
+                // Evening - Warm transition
+                return [
+                    Color(hex: "2C2520"),  // Warm charcoal
+                    Color(hex: "3A2F28"),  // Deep coffee
+                    Color(hex: "4A3830"),  // Warm slate
+                    Color(hex: "5C4A3D")   // Subtle brown
+                ]
+                
+            default:
+                // General dark mode (when system dark mode is on during day)
+                return [
+                    Color(hex: "1C1816"),  // Warm near-black
+                    Color(hex: "2A2520"),  // Deep warm grey
+                    Color(hex: "38322D"),  // Muted warm brown
+                    Color(hex: "463F38")   // Soft earth tone
+                ]
+            }
+        }
            
            // ENHANCED: More authentic time-of-day gradients
            switch currentHour {
@@ -129,10 +206,13 @@ struct ReverieWeaverBackground: View {
                
            case 21..<24:
                // Evening - Night settles (9 PM-Midnight)
+               // Uses warm dark tones to support wind-down/rest period
+               // Same palette as deep night (0-5 AM) for sleep preparation
                return [
-                Color(hex: "2C3E50"), // Dark slate
-                Color(hex: "1F2937"), // Charcoal blue
-                Color(hex: "111827")  // Deep grey
+                   Color(hex: "1A1612"),  // Deep warm near-black
+                   Color(hex: "2C2520"),  // Deep warm grey
+                   Color(hex: "3D3530"),  // Muted warm slate
+                   Color(hex: "4A3F35")   // Subtle warm brown
                ]
                
            default:
@@ -194,11 +274,8 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
 struct WeaverExampleView: View {
     var body: some View {
         ZStack {
-            // Apply the background with real paper texture
-            // NOTE: Add "paper-texture" image to Assets.xcassets first
             ReverieWeaverBackground()
             
-            // Your content goes here
             VStack(spacing: 20) {
                 Text("Good Morning")
                     .font(.system(size: 16, weight: .medium))

@@ -4,14 +4,10 @@
 //
 //  Created by Antheia Li on 11/7/25.
 //
-
-
+// Habit+ProgramTag
 //
-// Habit+ProgramTag.swift
-// Reverie Weaver
-//
-// ✅ Extension to protect program tags and provide tag validation
-// Add this file to your project to ensure tags are never accidentally modified
+// Extension to protect program tags and provide tag validation
+// Updated to support Theme Week programs (TW- prefix)
 //
 
 import Foundation
@@ -31,9 +27,11 @@ extension Habit {
         programTag?.starts(with: "C7-") ?? false
     }
     
+    // Note: isThemeWeek is defined in ThemeWeekHelpers.swift
+    
     /// Check if this habit is part of any program
     var isProgramHabit: Bool {
-        isProject50 || isMiniChallenge
+        isProject50 || isMiniChallenge || isThemeWeek
     }
     
     /// Get the mini challenge tag (e.g., "FocusSprint" from "C7-FocusSprint")
@@ -41,6 +39,8 @@ extension Habit {
         guard let tag = programTag, tag.starts(with: "C7-") else { return nil }
         return String(tag.dropFirst(3))
     }
+    
+    // Note: themeWeekTag is defined in ThemeWeekHelpers.swift
     
     // MARK: - Tag Validation
     
@@ -51,8 +51,10 @@ extension Habit {
         // Valid formats:
         // - "P50" for Project 50
         // - "C7-[tag]" for Mini Challenges
+        // - "TW-[tag]" for Theme Weeks
         if tag == "P50" { return true }
         if tag.starts(with: "C7-") && tag.count > 3 { return true }
+        if tag.starts(with: "TW-") && tag.count > 3 { return true }
         
         return false
     }
@@ -72,6 +74,10 @@ extension Habit {
             return "Mini Challenge: \(challengeTag)"
         }
         
+        if let weekTag = themeWeekTag {
+            return "Theme Week: \(weekTag)"
+        }
+        
         return nil
     }
     
@@ -88,6 +94,10 @@ extension Habit {
             return "C7"
         }
         
+        if isThemeWeek {
+            return "TW"
+        }
+        
         return nil
     }
     
@@ -95,7 +105,7 @@ extension Habit {
     
     /// Call this in any edit flow to ensure tags aren't accidentally cleared
     /// Returns true if the edit is safe, false if it would break program tracking
-    func canSafelyEdit(newName: String? = nil, 
+    func canSafelyEdit(newName: String? = nil,
                       newDescription: String? = nil,
                       newIcon: String? = nil,
                       newProgramTag: String? = nil,
@@ -132,10 +142,14 @@ extension Habit {
             return habits.filter { $0.isProject50 }
         case .miniChallenge:
             return habits.filter { $0.isMiniChallenge }
+        case .themeWeek:
+            return habits.filter { $0.isThemeWeek }
         case .project50Level(let level):
             return habits.filter { $0.isProject50 && $0.programLevel == level }
         case .specificMiniChallenge(let tag):
             return habits.filter { $0.programTag == "C7-\(tag)" }
+        case .specificThemeWeek(let tag):
+            return habits.filter { $0.programTag == "TW-\(tag)" }
         case .regular:
             return habits.filter { !$0.isProgramHabit }
         case .all:
@@ -150,6 +164,8 @@ extension Habit {
         case project50Level(Int)
         case miniChallenge
         case specificMiniChallenge(String)
+        case themeWeek
+        case specificThemeWeek(String)
     }
 }
 
@@ -164,6 +180,7 @@ extension Habit {
         info += "  programLevel: \(programLevel.map { "\($0)" } ?? "nil")\n"
         info += "  isProject50: \(isProject50)\n"
         info += "  isMiniChallenge: \(isMiniChallenge)\n"
+        info += "  isThemeWeek: \(isThemeWeek)\n"  // from ThemeWeekHelpers
         
         if let displayName = programDisplayName {
             info += "  Program: \(displayName)\n"
@@ -192,7 +209,12 @@ extension Array where Element == Habit {
         filter { $0.isMiniChallenge }
     }
     
-    /// Get all program habits (P50 + Mini Challenges)
+    /// Get all Theme Week habits
+    var themeWeekHabits: [Habit] {
+        filter { $0.isThemeWeek }
+    }
+    
+    /// Get all program habits (P50 + Mini Challenges + Theme Weeks)
     var programHabits: [Habit] {
         filter { $0.isProgramHabit }
     }
@@ -212,6 +234,11 @@ extension Array where Element == Habit {
         filter { $0.programTag == "C7-\(tag)" }
     }
     
+    /// Get Theme Week habits for a specific tag
+    func themeWeekHabits(tag: String) -> [Habit] {
+        filter { $0.programTag == "TW-\(tag)" }
+    }
+    
     /// Print tag summary for all habits (debugging)
     func printTagSummary() {
         print("\n📊 HABIT TAG SUMMARY")
@@ -219,6 +246,7 @@ extension Array where Element == Habit {
         print("Total Habits: \(count)")
         print("  • Project 50: \(project50Habits.count)")
         print("  • Mini Challenges: \(miniChallengeHabits.count)")
+        print("  • Theme Weeks: \(themeWeekHabits.count)")
         print("  • Regular: \(regularHabits.count)")
         
         if !project50Habits.isEmpty {
@@ -239,6 +267,15 @@ extension Array where Element == Habit {
                 print("  • \(tag): \(count) habits")
             }
         }
+        
+        if !themeWeekHabits.isEmpty {
+            print("\nTheme Weeks:")
+            let weekTags = Set(themeWeekHabits.compactMap { $0.themeWeekTag })
+            for tag in weekTags.sorted() {
+                let count = themeWeekHabits(tag: tag).count
+                print("  • \(tag): \(count) habits")
+            }
+        }
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     }
 }
@@ -255,17 +292,26 @@ extension Array where Element == Habit {
      showProgramDeletionWarning = true
  }
  
+ // Check specific program type
+ if habit.isThemeWeek {
+     print("This is a Theme Week habit")
+ }
+ 
  
  EXAMPLE 2: Filter habits for a specific program
  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  
  // Get only Project 50 Level 2 habits
- let level2Habits = habits.filter { 
-     $0.isProject50 && $0.programLevel == 2 
+ let level2Habits = habits.filter {
+     $0.isProject50 && $0.programLevel == 2
  }
+ 
+ // Get all Theme Week habits
+ let themeWeekHabits = habits.filter { $0.isThemeWeek }
  
  // Or use the helper
  let level2Habits = habits.project50Habits(level: 2)
+ let gentleRhythmHabits = habits.themeWeekHabits(tag: "GentleRhythm")
  
  
  EXAMPLE 3: Protect tags during editing
@@ -321,5 +367,19 @@ extension Array where Element == Habit {
          programLevel: level
      )
  }
+ 
+ EXAMPLE 7: Create Theme Week habit
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 
+ let themeWeekHabit = Habit(
+     name: "Morning Pages",
+     description: "Write 3 pages",
+     category: "Creativity",
+     categoryIcon: "pencil",
+     icon: "book.fill",
+     colorHex: "C8B8DB",
+     programTag: "TW-GentleRhythm",  // Theme Week tag
+     programLevel: nil                // Theme Weeks don't use levels
+ )
  
  */

@@ -1,15 +1,10 @@
 //
 // HabitLibrary.swift
-// ReverieWeaver
+// Reverie Weaver
 //
 // Complete habit template system with quick action integration
-//Create categories like:
-//Morning Rituals (Make bed, Meditation, Journaling)
-//Health Foundations (Drink water, Exercise, Healthy meal)
-//Mindful Living (Gratitude, No phone first hour, Evening walk)
-//Creative Practice (Read 10 pages, Creative work, Learn something new)
-//Connection (Call a friend, Quality time, Act of kindness)
-//Create a comprehensive library with quick action versions:
+// Production Ready: Safe Enum coding, robust data structure
+//
 
 import SwiftUI
 import SwiftData
@@ -33,13 +28,13 @@ enum HabitCategory: String, CaseIterable, Codable {
     }
     
     var color: Color {
-            switch self {
-            case .morningRituals: return .sageGreen        // Soft sage
-            case .healthFoundations: return .terracottaRose // Warm terracotta
-            case .mindfulLiving: return .sageGreen          // Soft sage (alternate)
-            case .creativePractice: return .paleMauve       // Gentle mauve
-            case .connection: return .dustyBlue             // Calm dusty blue
-            }
+        switch self {
+        case .morningRituals: return .sageGreen        // Soft sage
+        case .healthFoundations: return .terracottaRose // Warm terracotta
+        case .mindfulLiving: return .sageGreen          // Soft sage (alternate)
+        case .creativePractice: return .paleMauve       // Gentle mauve
+        case .connection: return .dustyBlue             // Calm dusty blue
+        }
     }
     
     var colorHex: String {
@@ -70,7 +65,10 @@ struct HabitTemplate: Identifiable, Hashable {
     let category: HabitCategory
     let icon: String
     let description: String
-    let quickActionKey: String? // Links to MicroHabit titleKey
+    let quickActionKey: String?
+    
+    let systemTag: String?
+    
     let suggestedFrequency: String
     let benefits: [String]
     let tips: String
@@ -83,13 +81,14 @@ struct HabitTemplate: Identifiable, Hashable {
 // MARK: - Complete Habit Library
 struct HabitLibraryData {
     static let templates: [HabitTemplate] = [
-        // MORNING RITUALS ☀️
+        // MORNING RITUALS
         HabitTemplate(
             name: "Morning Meditation",
             category: .morningRituals,
             icon: "figure.mind.and.body",
             description: "Start your day with 5-10 minutes of mindful breathing and presence",
             quickActionKey: "micro.morning.meditate",
+            systemTag: "Morning", // Links to Morning Star badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Reduces anxiety and morning stress",
@@ -106,6 +105,7 @@ struct HabitLibraryData {
             icon: "heart.text.square",
             description: "Write down 3 things you're grateful for each morning",
             quickActionKey: "micro.morning.gratitude",
+            systemTag: "Morning", // Links to Morning Star badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Increases happiness and life satisfaction",
@@ -122,6 +122,7 @@ struct HabitLibraryData {
             icon: "figure.flexibility",
             description: "Gentle stretching to wake up your body and increase energy",
             quickActionKey: "micro.morning.stretch",
+            systemTag: "Morning", // Links to Morning Star badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Increases blood flow and energy",
@@ -138,6 +139,7 @@ struct HabitLibraryData {
             icon: "bed.double.fill",
             description: "Complete one small task before starting your day",
             quickActionKey: "micro.morning.bed",
+            systemTag: "Morning", // Links to Morning Star badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Starts day with accomplishment",
@@ -154,6 +156,7 @@ struct HabitLibraryData {
             icon: "pencil.and.list.clipboard",
             description: "Stream-of-consciousness writing for 10 minutes",
             quickActionKey: "micro.morning.write",
+            systemTag: "Morning", // Links to Morning Star badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Clears mental clutter",
@@ -170,6 +173,7 @@ struct HabitLibraryData {
             icon: "book.fill",
             description: "Read something inspiring or educational for 10 minutes",
             quickActionKey: "micro.morning.read",
+            systemTag: "Morning", // Links to Morning Star badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Sets positive tone for the day",
@@ -180,13 +184,14 @@ struct HabitLibraryData {
             estimatedMinutes: "10-15 min"
         ),
         
-        // HEALTH FOUNDATIONS 💪
+        // HEALTH FOUNDATIONS
         HabitTemplate(
             name: "Daily Movement",
             category: .healthFoundations,
             icon: "figure.walk",
             description: "20-30 minutes of physical activity you enjoy",
             quickActionKey: "micro.afternoon.walk",
+            systemTag: "Health",
             suggestedFrequency: "Daily",
             benefits: [
                 "Boosts energy and mood significantly",
@@ -203,6 +208,7 @@ struct HabitLibraryData {
             icon: "drop.fill",
             description: "Drink 6-8 glasses of water throughout the day",
             quickActionKey: "micro.morning.water",
+            systemTag: "Health",
             suggestedFrequency: "Daily",
             benefits: [
                 "Better energy and mental clarity",
@@ -219,6 +225,7 @@ struct HabitLibraryData {
             icon: "carrot.fill",
             description: "Eat at least one nutritious, home-cooked meal",
             quickActionKey: "micro.afternoon.fruit",
+            systemTag: "Health",
             suggestedFrequency: "Daily",
             benefits: [
                 "More energy and stable mood",
@@ -235,6 +242,7 @@ struct HabitLibraryData {
             icon: "fork.knife",
             description: "Eat one meal without screens, slowly and intentionally",
             quickActionKey: nil,
+            systemTag: "Health",
             suggestedFrequency: "Daily",
             benefits: [
                 "Better digestion",
@@ -251,6 +259,7 @@ struct HabitLibraryData {
             icon: "bed.double.circle",
             description: "Go to bed and wake up at consistent times",
             quickActionKey: nil,
+            systemTag: "Sleep", // Links to Energy Recharge / Rest badges
             suggestedFrequency: "Daily",
             benefits: [
                 "Better sleep quality",
@@ -267,6 +276,7 @@ struct HabitLibraryData {
             icon: "figure.stand",
             description: "Check and correct your posture throughout the day",
             quickActionKey: nil,
+            systemTag: "Health",
             suggestedFrequency: "3x daily",
             benefits: [
                 "Reduces back and neck pain",
@@ -277,13 +287,14 @@ struct HabitLibraryData {
             estimatedMinutes: "1 min"
         ),
         
-        // MINDFUL LIVING 🍃
+        // MINDFUL LIVING
         HabitTemplate(
             name: "Evening Reflection",
             category: .mindfulLiving,
             icon: "moon.stars",
             description: "Spend 5 minutes reviewing your day with kindness",
             quickActionKey: "micro.evening.journal",
+            systemTag: "Mindfulness",
             suggestedFrequency: "Daily",
             benefits: [
                 "Process emotions healthily",
@@ -300,6 +311,7 @@ struct HabitLibraryData {
             icon: "iphone.slash",
             description: "No screens 1 hour before bed",
             quickActionKey: nil,
+            systemTag: "Sleep",
             suggestedFrequency: "Daily",
             benefits: [
                 "Significantly better sleep",
@@ -316,6 +328,7 @@ struct HabitLibraryData {
             icon: "wind",
             description: "3-5 minutes of focused breathing practice",
             quickActionKey: "micro.afternoon.meditate",
+            systemTag: "Mindfulness",
             suggestedFrequency: "2x daily",
             benefits: [
                 "Reduces stress immediately",
@@ -332,6 +345,7 @@ struct HabitLibraryData {
             icon: "leaf",
             description: "Spend 15 minutes outside in nature",
             quickActionKey: "micro.afternoon.walk",
+            systemTag: "Mindfulness",
             suggestedFrequency: "Daily",
             benefits: [
                 "Reduces stress and anxiety",
@@ -348,6 +362,7 @@ struct HabitLibraryData {
             icon: "sparkles",
             description: "Spend 10 minutes tidying your space",
             quickActionKey: "micro.morning.tidy",
+            systemTag: "Mindfulness",
             suggestedFrequency: "Daily",
             benefits: [
                 "Clearer mind and focus",
@@ -364,6 +379,7 @@ struct HabitLibraryData {
             icon: "scope",
             description: "Focus on one task at a time for 25 minutes",
             quickActionKey: nil,
+            systemTag: "DeepWork", // Helps identifying focus moments
             suggestedFrequency: "Daily",
             benefits: [
                 "Better quality work",
@@ -374,13 +390,14 @@ struct HabitLibraryData {
             estimatedMinutes: "25 min"
         ),
         
-        // CREATIVE PRACTICE 🎨
+        // CREATIVE PRACTICE
         HabitTemplate(
             name: "Daily Reading",
             category: .creativePractice,
             icon: "book.fill",
             description: "Read for 15-30 minutes for pleasure or learning",
             quickActionKey: "micro.evening.read",
+            systemTag: "Creative",
             suggestedFrequency: "Daily",
             benefits: [
                 "Expands knowledge and vocabulary",
@@ -397,6 +414,7 @@ struct HabitLibraryData {
             icon: "paintbrush.fill",
             description: "Spend 20 minutes on any creative activity",
             quickActionKey: "micro.afternoon.doodle",
+            systemTag: "Creative",
             suggestedFrequency: "3x weekly",
             benefits: [
                 "Reduces stress and anxiety",
@@ -413,6 +431,7 @@ struct HabitLibraryData {
             icon: "brain.head.profile",
             description: "Dedicate 15 minutes to learning a new skill",
             quickActionKey: "micro.afternoon.learn",
+            systemTag: "Creative",
             suggestedFrequency: "Daily",
             benefits: [
                 "Keeps mind sharp",
@@ -429,6 +448,7 @@ struct HabitLibraryData {
             icon: "timer",
             description: "Spend one uninterrupted hour on focused, high-value work without distractions",
             quickActionKey: nil,
+            systemTag: "DeepWork", // Links to 'The Silent Deep' badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Builds deep focus and cognitive endurance",
@@ -445,6 +465,7 @@ struct HabitLibraryData {
             icon: "music.note",
             description: "Practice an instrument or singing",
             quickActionKey: nil,
+            systemTag: "Creative",
             suggestedFrequency: "3x weekly",
             benefits: [
                 "Boosts mood and reduces stress",
@@ -461,6 +482,7 @@ struct HabitLibraryData {
             icon: "book.pages",
             description: "Free-write or prompted journaling",
             quickActionKey: "micro.evening.journal",
+            systemTag: "Mindfulness",
             suggestedFrequency: "Daily",
             benefits: [
                 "Process emotions and experiences",
@@ -477,6 +499,7 @@ struct HabitLibraryData {
             icon: "camera.fill",
             description: "Take one intentional photo each day",
             quickActionKey: nil,
+            systemTag: "Creative",
             suggestedFrequency: "Daily",
             benefits: [
                 "Cultivates attention to beauty",
@@ -487,13 +510,14 @@ struct HabitLibraryData {
             estimatedMinutes: "5 min"
         ),
         
-        // CONNECTION 💝
+        // CONNECTION
         HabitTemplate(
             name: "Meaningful Conversation",
             category: .connection,
             icon: "bubble.left.and.bubble.right.fill",
             description: "Have a real conversation with someone you care about",
             quickActionKey: "micro.afternoon.text",
+            systemTag: "Connection", // Links to Crystal Drop badge
             suggestedFrequency: "Daily",
             benefits: [
                 "Strengthens relationships",
@@ -510,6 +534,7 @@ struct HabitLibraryData {
             icon: "heart.circle.fill",
             description: "Do something kind for someone else",
             quickActionKey: nil,
+            systemTag: "Connection",
             suggestedFrequency: "3x weekly",
             benefits: [
                 "Increases happiness (yours and theirs)",
@@ -526,6 +551,7 @@ struct HabitLibraryData {
             icon: "person.2.fill",
             description: "Spend focused time with loved ones",
             quickActionKey: nil,
+            systemTag: "Connection",
             suggestedFrequency: "3x weekly",
             benefits: [
                 "Deeper relationships",
@@ -539,9 +565,10 @@ struct HabitLibraryData {
         HabitTemplate(
             name: "Express Appreciation",
             category: .connection,
-            icon: "sparkle.heart.fill",
+            icon: "heart.circle.fill",
             description: "Tell someone specifically why you appreciate them",
             quickActionKey: "micro.afternoon.text",
+            systemTag: "Connection",
             suggestedFrequency: "2x weekly",
             benefits: [
                 "Strengthens bonds",
@@ -558,6 +585,7 @@ struct HabitLibraryData {
             icon: "house.fill",
             description: "Create a regular ritual with family",
             quickActionKey: nil,
+            systemTag: "Connection",
             suggestedFrequency: "Weekly",
             benefits: [
                 "Creates lasting memories",
@@ -574,6 +602,7 @@ struct HabitLibraryData {
             icon: "ear.fill",
             description: "Practice truly listening without planning your response",
             quickActionKey: nil,
+            systemTag: "Connection",
             suggestedFrequency: "Daily",
             benefits: [
                 "Deeper understanding",
@@ -594,3 +623,4 @@ struct HabitLibraryData {
         templates.first { $0.quickActionKey == quickActionKey }
     }
 }
+

@@ -14,7 +14,6 @@
 		6E3B18542E949F82004A686F /* PriorityTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3B18532E949F82004A686F /* PriorityTask.swift */; };
 		6E3B185E2E950BC6004A686F /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3B185D2E950BC6004A686F /* Color+Extensions.swift */; };
 		6E3B18602E950BD3004A686F /* KeyboardExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3B185F2E950BD3004A686F /* KeyboardExtension.swift */; };
-		6E52A84B2EBDE3A0008A1BBE /* Project50TagRepairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E52A84A2EBDE3A0008A1BBE /* Project50TagRepairView.swift */; };
 		6E8DECCA2E9398550091F0BE /* Habit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8DECC92E9398550091F0BE /* Habit.swift */; };
 		6E8DECCC2E9399700091F0BE /* HabitCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8DECCB2E9399700091F0BE /* HabitCompletion.swift */; };
 		6E8DECCE2E9399820091F0BE /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8DECCD2E9399820091F0BE /* MainTabView.swift */; };
@@ -27,6 +26,15 @@
 		6EAFF2CF2EADC36500002924 /* ArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EAFF2CE2EADC36500002924 /* ArchiveView.swift */; };
 		6EAFF2E52EADC8AA00002924 /* StatCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EAFF2E42EADC8AA00002924 /* StatCard.swift */; };
 		6EAFF2F12EAE013000002924 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EAFF2F02EAE013000002924 /* AchievementsView.swift */; };
+		6EBD37142F26FD3B008FAF6B /* GlassCloseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBD370C2F26FD3B008FAF6B /* GlassCloseButton.swift */; };
+		6EBD3C5B2F2A0760008FAF6B /* AchievementCelebrationQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBD3C582F2A0760008FAF6B /* AchievementCelebrationQueue.swift */; };
+		6EBD3C5C2F2A0760008FAF6B /* WeeklyThreadChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBD3C5A2F2A0760008FAF6B /* WeeklyThreadChallenge.swift */; };
+		6EBD3C5D2F2A0760008FAF6B /* CelebrationAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBD3C592F2A0760008FAF6B /* CelebrationAnimations.swift */; };
+		6EBD3C5F2F2A0769008FAF6B /* AchievementAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBD3C5E2F2A0769008FAF6B /* AchievementAudioManager.swift */; };
+		6EF77A922F18FB770051E142 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EF77A912F18FB770051E142 /* OnboardingView.swift */; };
+		6EF77A942F18FBA00051E142 /* OnboardingResetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EF77A932F18FBA00051E142 /* OnboardingResetButton.swift */; };
+		6EF77A962F18FBB00051E142 /* ONBOARDING_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 6EF77A952F18FBB00051E142 /* ONBOARDING_GUIDE.md */; };
+		6EF77A982F18FD3D0051E142 /* ONBOARDING_UPDATE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 6EF77A972F18FD3D0051E142 /* ONBOARDING_UPDATE_SUMMARY.md */; };
 		6EFD628E2EA71B8900DBF901 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFD628D2EA71B8900DBF901 /* ConfettiView.swift */; };
 		6EFD62AA2EA8257100DBF901 /* HybridCompletionToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFD62A92EA8257100DBF901 /* HybridCompletionToast.swift */; };
 /* End PBXBuildFile section */
@@ -39,7 +47,6 @@
 		6E3B18532E949F82004A686F /* PriorityTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PriorityTask.swift; sourceTree = "<group>"; };
 		6E3B185D2E950BC6004A686F /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
 		6E3B185F2E950BD3004A686F /* KeyboardExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardExtension.swift; sourceTree = "<group>"; };
-		6E52A84A2EBDE3A0008A1BBE /* Project50TagRepairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project50TagRepairView.swift; sourceTree = "<group>"; };
 		6E8DECB02E9397050091F0BE /* Reverie Weaver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Reverie Weaver.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E8DECC92E9398550091F0BE /* Habit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Habit.swift; sourceTree = "<group>"; };
 		6E8DECCB2E9399700091F0BE /* HabitCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitCompletion.swift; sourceTree = "<group>"; };
@@ -53,6 +60,15 @@
 		6EAFF2CE2EADC36500002924 /* ArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveView.swift; sourceTree = "<group>"; };
 		6EAFF2E42EADC8AA00002924 /* StatCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatCard.swift; sourceTree = "<group>"; };
 		6EAFF2F02EAE013000002924 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		6EBD370C2F26FD3B008FAF6B /* GlassCloseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCloseButton.swift; sourceTree = "<group>"; };
+		6EBD3C582F2A0760008FAF6B /* AchievementCelebrationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementCelebrationQueue.swift; sourceTree = "<group>"; };
+		6EBD3C592F2A0760008FAF6B /* CelebrationAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelebrationAnimations.swift; sourceTree = "<group>"; };
+		6EBD3C5A2F2A0760008FAF6B /* WeeklyThreadChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyThreadChallenge.swift; sourceTree = "<group>"; };
+		6EBD3C5E2F2A0769008FAF6B /* AchievementAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementAudioManager.swift; sourceTree = "<group>"; };
+		6EF77A912F18FB770051E142 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		6EF77A932F18FBA00051E142 /* OnboardingResetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingResetButton.swift; sourceTree = "<group>"; };
+		6EF77A952F18FBB00051E142 /* ONBOARDING_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ONBOARDING_GUIDE.md; sourceTree = "<group>"; };
+		6EF77A972F18FD3D0051E142 /* ONBOARDING_UPDATE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ONBOARDING_UPDATE_SUMMARY.md; sourceTree = "<group>"; };
 		6EFD628D2EA71B8900DBF901 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		6EFD62A92EA8257100DBF901 /* HybridCompletionToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HybridCompletionToast.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -103,6 +119,26 @@
 			path = "Reverie Weaver";
 			sourceTree = "<group>";
 		};
+		6EB988612EDA6F4300FD1542 /* Profile View */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Profile View";
+			sourceTree = "<group>";
+		};
+		6EBD3C602F2A1231008FAF6B /* AchievementSounds */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AchievementSounds;
+			sourceTree = "<group>";
+		};
+		6EC504C72EDCED210038F715 /* Workout Plan */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Workout Plan";
+			sourceTree = "<group>";
+		};
+		6EDC70202EC9C5EF0095275E /* ThemeWeek */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ThemeWeek;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -136,6 +172,7 @@
 		6E8DECC02E9397160091F0BE /* V.1 */ = {
 			isa = PBXGroup;
 			children = (
+				6EB989002EDC05A100FD1542 /* ReverieWeaver Test */,
 				6E8DECC12E9397550091F0BE /* Models */,
 			);
 			path = V.1;
@@ -153,7 +190,6 @@
 				6EFD628D2EA71B8900DBF901 /* ConfettiView.swift */,
 				6EAFF2862EAC8CE300002924 /* WeaverGamificationSystem.swift */,
 				6EAFF2882EAC8D0300002924 /* ProfileGamificationViews.swift */,
-				6E52A84A2EBDE3A0008A1BBE /* Project50TagRepairView.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -168,6 +204,10 @@
 				6EAFF2CE2EADC36500002924 /* ArchiveView.swift */,
 				6E8DECDB2E939BA60091F0BE /* ProfileView.swift */,
 				6E3B184C2E94817E004A686F /* AchievementManager.swift */,
+				6EF77A912F18FB770051E142 /* OnboardingView.swift */,
+				6EF77A932F18FBA00051E142 /* OnboardingResetButton.swift */,
+				6EF77A952F18FBB00051E142 /* ONBOARDING_GUIDE.md */,
+				6EF77A972F18FD3D0051E142 /* ONBOARDING_UPDATE_SUMMARY.md */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -175,10 +215,13 @@
 		6E8DECC32E9397660091F0BE /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				6EC504C72EDCED210038F715 /* Workout Plan */,
+				6EB988612EDA6F4300FD1542 /* Profile View */,
 				6E8DECC42E93976D0091F0BE /* Utilities */,
 				6EFD62A92EA8257100DBF901 /* HybridCompletionToast.swift */,
 				6EAFF2F02EAE013000002924 /* AchievementsView.swift */,
 				6EAFF2E42EADC8AA00002924 /* StatCard.swift */,
+				6EDC70202EC9C5EF0095275E /* ThemeWeek */,
 				6E52A8432EBDE200008A1BBE /* Project 50 */,
 				6E52A8412EBDE1EF008A1BBE /* Mini Challenges */,
 				6E52A8442EBDE20C008A1BBE /* Style References */,
@@ -194,12 +237,25 @@
 		6E8DECC42E93976D0091F0BE /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				6EBD3C602F2A1231008FAF6B /* AchievementSounds */,
+				6EBD3C5E2F2A0769008FAF6B /* AchievementAudioManager.swift */,
+				6EBD3C582F2A0760008FAF6B /* AchievementCelebrationQueue.swift */,
+				6EBD3C592F2A0760008FAF6B /* CelebrationAnimations.swift */,
+				6EBD3C5A2F2A0760008FAF6B /* WeeklyThreadChallenge.swift */,
 				6E101BF82EB0016A0014922A /* Item.swift */,
 				6E3B18512E94936C004A686F /* LocalizationManager.swift */,
 				6E3B185D2E950BC6004A686F /* Color+Extensions.swift */,
 				6E3B185F2E950BD3004A686F /* KeyboardExtension.swift */,
+				6EBD370C2F26FD3B008FAF6B /* GlassCloseButton.swift */,
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		6EB989002EDC05A100FD1542 /* ReverieWeaver Test */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "ReverieWeaver Test";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -227,6 +283,10 @@
 				6E52A8482EBDE2F7008A1BBE /* LoomView */,
 				6E52A8492EBDE33B008A1BBE /* ArchiveView */,
 				6E8DECB22E9397050091F0BE /* Reverie Weaver */,
+				6EB988612EDA6F4300FD1542 /* Profile View */,
+				6EBD3C602F2A1231008FAF6B /* AchievementSounds */,
+				6EC504C72EDCED210038F715 /* Workout Plan */,
+				6EDC70202EC9C5EF0095275E /* ThemeWeek */,
 			);
 			name = "Reverie Weaver";
 			packageProductDependencies = (
@@ -243,7 +303,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2600;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					6E8DECAF2E9397050091F0BE = {
 						CreatedOnToolsVersion = 26.0.1;
@@ -274,6 +334,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6EF77A982F18FD3D0051E142 /* ONBOARDING_UPDATE_SUMMARY.md in Resources */,
+				6EF77A962F18FBB00051E142 /* ONBOARDING_GUIDE.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -288,23 +350,29 @@
 				6E8DECCA2E9398550091F0BE /* Habit.swift in Sources */,
 				6E8DECD02E9399920091F0BE /* DeskView.swift in Sources */,
 				6E8DECCE2E9399820091F0BE /* MainTabView.swift in Sources */,
+				6EF77A922F18FB770051E142 /* OnboardingView.swift in Sources */,
 				6E3B18602E950BD3004A686F /* KeyboardExtension.swift in Sources */,
-				6E52A84B2EBDE3A0008A1BBE /* Project50TagRepairView.swift in Sources */,
 				6EFD628E2EA71B8900DBF901 /* ConfettiView.swift in Sources */,
 				6E3B18522E94936C004A686F /* LocalizationManager.swift in Sources */,
+				6EF77A942F18FBA00051E142 /* OnboardingResetButton.swift in Sources */,
 				6E3B18542E949F82004A686F /* PriorityTask.swift in Sources */,
 				6E3B184D2E94817E004A686F /* AchievementManager.swift in Sources */,
 				6EAFF2892EAC8D0300002924 /* ProfileGamificationViews.swift in Sources */,
 				6E3B185E2E950BC6004A686F /* Color+Extensions.swift in Sources */,
 				6E101BFD2EB0016A0014922A /* Item.swift in Sources */,
+				6EBD37142F26FD3B008FAF6B /* GlassCloseButton.swift in Sources */,
 				6EAFF2872EAC8CE300002924 /* WeaverGamificationSystem.swift in Sources */,
 				6EAFF2E52EADC8AA00002924 /* StatCard.swift in Sources */,
 				6E8DECDC2E939BA60091F0BE /* ProfileView.swift in Sources */,
+				6EBD3C5B2F2A0760008FAF6B /* AchievementCelebrationQueue.swift in Sources */,
+				6EBD3C5C2F2A0760008FAF6B /* WeeklyThreadChallenge.swift in Sources */,
+				6EBD3C5D2F2A0760008FAF6B /* CelebrationAnimations.swift in Sources */,
 				6E8DECD82E939B7F0091F0BE /* LoomView.swift in Sources */,
 				6EAFF2F12EAE013000002924 /* AchievementsView.swift in Sources */,
 				6E8DECDE2E9441C20091F0BE /* Achievement.swift in Sources */,
 				6EAFF2CF2EADC36500002924 /* ArchiveView.swift in Sources */,
 				6E3B184F2E948FB9004A686F /* UserProfile.swift in Sources */,
+				6EBD3C5F2F2A0769008FAF6B /* AchievementAudioManager.swift in Sources */,
 				6EFD62AA2EA8257100DBF901 /* HybridCompletionToast.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -347,6 +415,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9AZM6NSCC4;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -370,6 +439,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -410,6 +480,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9AZM6NSCC4;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -426,6 +497,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -437,9 +509,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9AZM6NSCC4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Reverie-Weaver-Info.plist";
@@ -458,6 +530,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Reverie-Archive.Reverie-Weaver";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -476,7 +549,6 @@
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 9AZM6NSCC4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Reverie-Weaver-Info.plist";

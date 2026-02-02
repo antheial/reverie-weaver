@@ -13,6 +13,7 @@ struct QuickActionPromptSheet: View {
     let onDismiss: () -> Void
     
     @StateObject private var localization = LocalizationManager.shared
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showConfetti = false
     
     var body: some View {
@@ -72,7 +73,7 @@ struct QuickActionPromptSheet: View {
                                 Text(microHabit.title)
                                     .font(.system(size: 15, weight: .medium))
                                     .fontDesign(.serif)
-                                    .foregroundStyle(Color.dynamicLabel)
+                                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                             }
                             
                             // Progress dots
@@ -84,7 +85,7 @@ struct QuickActionPromptSheet: View {
                                 }
                                 
                                 Text("3/3 " + localization.localize("quickAction.completions"))
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(microHabit.category.color)
                             }
                         }

@@ -2,10 +2,6 @@
 // Project50OverviewHabits.swift
 // Reverie Weaver
 //
-// ✅ FIXED: Ensures proper tag persistence
-// - All Project 50 habits tagged with "P50"
-// - programLevel properly set for each level
-// - Tags are immutable once set
 //
 
 import SwiftUI
@@ -52,11 +48,16 @@ struct Project50OverviewHabits: View {
         return habits.contains { habitNames.contains($0.name) }
     }
     
+    // MARK: - Body
     var body: some View {
         NavigationStack {
-            ZStack {
-                ReverieWeaverBackground()
+            ZStack(alignment: .top) {
                 
+                // Background
+                ReverieWeaverBackground()
+                    .ignoresSafeArea()
+                
+                // Main Content
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 22) {
                         headerSection
@@ -67,16 +68,22 @@ struct Project50OverviewHabits: View {
                             actionButtonSection
                         }
                     }
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 60)
+                    // 2. Add top padding to clear the floating button
+                    .padding(.top, 60)
                 }
-            }
-            .navigationTitle(navigationTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                
+                // 3. Floating Close Button
+                HStack {
+                    Spacer()
                     closeButton
                 }
+                .padding(.horizontal)
+                .padding(.top, 10)
             }
+            // 4. Hide the default navigation bar and title
+            .toolbar(.hidden, for: .navigationBar)
+            
             .alert("Error", isPresented: $showError) {
                 Button("OK") { }
             } message: {
@@ -102,16 +109,17 @@ private extension Project50OverviewHabits {
     }
     
     // MARK: Header Section
+    
     var headerSection: some View {
         VStack(spacing: 4) {
             Text(headerTitle)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.dynamicLabel)
+                 .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
             
             Text(headerSubtitle)
                 .font(.system(size: 13))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color.dynamicSecondaryLabel)
+                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 .padding(.horizontal, 24)
         }
         .padding(.top, 12)
@@ -140,6 +148,7 @@ private extension Project50OverviewHabits {
     }
     
     // MARK: Habits List
+    
     var habitsListSection: some View {
         VStack(spacing: 12) {
             ForEach(levelHabits) { habit in
@@ -151,6 +160,7 @@ private extension Project50OverviewHabits {
     }
     
     // MARK: Action Button
+    
     @ViewBuilder
     var actionButtonSection: some View {
         if habitsAlreadyAdded && mode == .initial {
@@ -161,7 +171,7 @@ private extension Project50OverviewHabits {
                     .foregroundStyle(Color.sageGreen)
                 Text("Already on Your Desk")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.dynamicLabel)
+                     .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -225,19 +235,8 @@ private extension Project50OverviewHabits {
     
     // MARK: Close Button
     var closeButton: some View {
-        Button { dismiss() } label: {
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.35))
-                    .frame(width: 32, height: 32)
-                    .shadow(color: Color.shadowColor, radius: 4, y: 2)
-                Circle()
-                    .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                    .frame(width: 32, height: 32)
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.dynamicSecondaryLabel)
-            }
+        GlassCloseButton {
+            dismiss()
         }
     }
 }
@@ -246,7 +245,7 @@ private extension Project50OverviewHabits {
 
 private extension Project50OverviewHabits {
     
-    // ✅ FIXED: Proper tag enforcement and validation
+    // Proper tag enforcement and validation
     func addHabitsToDesk() {
         guard !levelHabits.isEmpty else {
             errorMessage = "No habits found for Level \(level)."
@@ -290,7 +289,7 @@ private extension Project50OverviewHabits {
                     }
                 }
                 
-                // ✅ Create habit with ENFORCED tags
+                // Create habit with ENFORCED tags
                 let habit = Habit(
                     name: newHabit.name,
                     description: newHabit.description,
@@ -301,8 +300,8 @@ private extension Project50OverviewHabits {
                     completionMessage: "Thread woven – you've honored your commitment.",
                     frequency: "daily",
                     order: currentOrder,
-                    programTag: "P50",           // ✅ CRITICAL: Tag as Project 50
-                    programLevel: level          // ✅ CRITICAL: Track level (1, 2, or 3)
+                    programTag: "P50",
+                    programLevel: level          
                 )
                 modelContext.insert(habit)
                 currentOrder += 1
@@ -315,8 +314,7 @@ private extension Project50OverviewHabits {
                 currentOrder += 1
                 processedExisting += 1
             }
-            
-            // Save context
+           
             do {
                 try modelContext.save()
                 
@@ -354,15 +352,14 @@ private extension Project50OverviewHabits {
         case "Creative Practice": return 3
         case "Connection": return 4
         case "Mindful Living": return 5
-        default: return 999 // Unknown categories go to the end
+        default: return 999
         }
     }
     
-    // ✅ FIXED: Only remove habits with exact tag and level match
+    // Only remove habits with exact tag and level match
     func removePreviousLevelHabits() {
         let previousLevel = level - 1
         
-        // Only remove habits with matching programTag AND programLevel
         let previousLevelHabits = habits.filter { habit in
             habit.programTag == "P50" && habit.programLevel == previousLevel
         }
@@ -370,6 +367,7 @@ private extension Project50OverviewHabits {
         print("🗑️ Removing \(previousLevelHabits.count) habits from Level \(previousLevel)")
         
         for habit in previousLevelHabits {
+            habit.prepareForDeletion()
             modelContext.delete(habit)
         }
     }
@@ -409,26 +407,19 @@ private struct LevelHabitCard: View {
                 Text(habit.name)
                     .font(.system(size: 14, weight: .semibold))
                     .fontDesign(.serif)
-                    .foregroundStyle(Color.dynamicLabel)
+                     .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                 
                 Text(habit.description)
                     .font(.system(size: 12))
                     .lineLimit(2)
-                    .foregroundStyle(Color.dynamicSecondaryLabel)
+                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
             }
             
             Spacer()
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(colorScheme == .dark ? 0.1 : 0.35))
-                .shadow(color: Color.shadowColor.opacity(0.1), radius: 3, y: 2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
-        )
+        .reverieCardStyle(colorScheme: colorScheme)
     }
 }
+

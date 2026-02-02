@@ -2,11 +2,6 @@
 // ArchiveView.swift
 // Reverie Weaver
 //
-// Main Archive container with default Weekly view
-// - Matches The Loom's header spacing and typography
-// - Adaptive black/white trophy icon
-// - Native dropdown menu and achievements sheet
-// - Smooth page transitions with slide and fade effects
 //
 
 import SwiftUI
@@ -14,38 +9,44 @@ import SwiftData
 
 struct ArchiveView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.modelContext) private var modelContext
 
-    // MARK: - Queries
     @Query private var completions: [HabitCompletion]
 
-    // MARK: - State
     @State private var selectedSection: ArchiveSection = .weekly
+    @State private var previousSection: ArchiveSection = .weekly
     @State private var showAchievements = false
-    @Namespace private var animation
-
     @StateObject private var achievementManager = AchievementManager.shared
 
-    // MARK: - Body
     var body: some View {
         NavigationStack {
             ZStack {
                 ReverieWeaverBackground()
 
                 VStack(spacing: 16) {
-                    // MARK: - Header (matched Loom style)
                     headerSection
 
-                    // MARK: - Active Section with Smooth Transitions
                     ZStack {
-                        ForEach(ArchiveSection.allCases, id: \.self) { section in
-                            if selectedSection == section {
-                                sectionView(for: section)
-                                    .transition(transitionForSection(section))
-                                    .zIndex(1)
+                        Group {
+                            switch selectedSection {
+                            case .weekly:
+                                WeeklyArchiveView()
+                                    .id(ArchiveSection.weekly)
+                            case .monthly:
+                                MonthlyArchiveView()
+                                    .id(ArchiveSection.monthly)
+                            case .favorites:
+                                FavoritesTimelineView()
+                                    .id(ArchiveSection.favorites)
+                            case .reflections:
+                                ReflectionNoteView()
+                                    .id(ArchiveSection.reflections)
                             }
                         }
+                        .transition(activeTransition)
                     }
                     .animation(.spring(response: 0.4, dampingFraction: 0.85), value: selectedSection)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .sheet(isPresented: $showAchievements) {
@@ -54,111 +55,88 @@ struct ArchiveView: View {
                     .presentationCornerRadius(24)
             }
         }
-    }
-
-    // MARK: - Section View Builder
-    @ViewBuilder
-    private func sectionView(for section: ArchiveSection) -> some View {
-        switch section {
-        case .weekly:
-            WeeklyArchiveView()
-                .id("weekly")
-        case .monthly:
-            MonthlyArchiveView()
-                .id("monthly")
-        case .favorites:
-            FavoritesTimelineView()
-                .id("favorites")
-        case .reflections:
-            ReflectionNoteView()
-                .id("reflections")
+        .onChange(of: selectedSection) { oldValue, newValue in
+            previousSection = oldValue
+        }
+        // Prevents duplicate attachments
+        .onAppear {
+            achievementManager.attachContext(modelContext)
         }
     }
 
     // MARK: - Transition Logic
-    private func transitionForSection(_ section: ArchiveSection) -> AnyTransition {
-        let direction: Edge = section.rawValue > selectedSection.rawValue ? .trailing : .leading
-
+    
+    private var activeTransition: AnyTransition {
+        let isMovingForward = selectedSection.rawValue > previousSection.rawValue
+        
         return AnyTransition.asymmetric(
             insertion: .opacity
-                .combined(with: .move(edge: direction))
-                .combined(with: .scale(scale: 0.95, anchor: .center)),
+                .combined(with: .move(edge: isMovingForward ? .trailing : .leading))
+                .combined(with: .scale(scale: 0.98, anchor: .center)),
             removal: .opacity
-                .combined(with: .move(edge: direction == .trailing ? .leading : .trailing))
-                .combined(with: .scale(scale: 0.95, anchor: .center))
+                .combined(with: .move(edge: isMovingForward ? .leading : .trailing))
+                .combined(with: .scale(scale: 0.98, anchor: .center))
         )
     }
 
-    // MARK: - Header (Loom-style spacing and alignment)
+    // MARK: - Header
+    
     private var headerSection: some View {
         VStack(spacing: 8) {
             HStack(alignment: .center) {
-                // Title + date
-                VStack(alignment: .leading, spacing: 6) {
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                            selectedSection = .weekly
-                        }
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    } label: {
-                        Text("Archive")
-                            .font(.system(size: 23, weight: .regular))
-                            .fontDesign(.serif)
-                            .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .buttonStyle(.plain)
+                Button {
+                    changeSection(to: .weekly)
+                } label: {
+                    Text("Archive")
+                        .font(.system(size: 23, weight: .regular))
+                        .fontDesign(.serif)
+                        .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .buttonStyle(.plain)
 
                 Spacer()
 
-                // Right icons (menu + trophy)
                 HStack(spacing: 14) {
                     sectionMenuButton
                     achievementsButton
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.top, 4) // âœ… identical top offset as The Loom
+            .padding(.top, 4)
         }
     }
 
-    // MARK: - Section Menu (Native iOS style)
+    // MARK: - Helper Actions
+    
+    private func changeSection(to section: ArchiveSection) {
+        guard selectedSection != section else { return }
+        
+        previousSection = selectedSection
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+            selectedSection = section
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    // MARK: - Section Menu
+    
     private var sectionMenuButton: some View {
         Menu {
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    selectedSection = .weekly
-                }
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            } label: {
+            Button { changeSection(to: .weekly) } label: {
                 Label("Weekly Archive", systemImage: "calendar.badge.clock")
             }
 
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    selectedSection = .monthly
-                }
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            } label: {
+            Button { changeSection(to: .monthly) } label: {
                 Label("Monthly Archive", systemImage: "calendar")
             }
 
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    selectedSection = .favorites
-                }
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            } label: {
+            Button { changeSection(to: .favorites) } label: {
                 Label("Favorite Moments", systemImage: "heart.fill")
             }
 
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    selectedSection = .reflections
-                }
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            } label: {
+            Button { changeSection(to: .reflections) } label: {
                 Label("Reflections", systemImage: "book.pages")
             }
         } label: {
@@ -175,7 +153,8 @@ struct ArchiveView: View {
         }
     }
 
-    // MARK: - Achievements Button (adaptive black/white icon)
+    // MARK: - Achievements Button
+    
     private var achievementsButton: some View {
         Button {
             showAchievements = true
@@ -193,8 +172,8 @@ struct ArchiveView: View {
                         colorScheme == .dark ? Color.white : Color.black
                     )
 
-                // Badge indicator for new achievements
-                if hasRecentUnlocks {
+                // Check ready state before showing badge
+                if achievementManager.isReady && hasRecentUnlocks {
                     Circle()
                         .fill(Color.terracottaRose)
                         .frame(width: 8, height: 8)
@@ -204,24 +183,15 @@ struct ArchiveView: View {
         }
     }
 
-    // MARK: - Week Range Formatter
-    private var currentWeekRange: String {
-        let calendar = Calendar.current
-        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else { return "" }
-        let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? Date()
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return "\(formatter.string(from: weekStart)) - \(formatter.string(from: weekEnd))"
-    }
-
     // MARK: - Computed Properties
+    
     private var hasRecentUnlocks: Bool {
         achievementManager.unlockedAchievements.count > 0
     }
 }
 
 // MARK: - Enum
+
 enum ArchiveSection: Int, CaseIterable {
     case weekly = 0
     case monthly = 1
@@ -229,7 +199,6 @@ enum ArchiveSection: Int, CaseIterable {
     case reflections = 3
 }
 
-// MARK: - Preview
 #Preview {
     ArchiveView()
         .preferredColorScheme(.light)

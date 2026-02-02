@@ -2,8 +2,9 @@
 // ReflectionSheet.swift
 // ReverieWeaver
 //
-// Reflection journal after completing a habit with photo support
-// Updated with SF Symbols and consistent styling
+// Reflection journal after completing a habit with MULTI-photo support
+// Updated with photo quota management and journal-style photo previews
+// Shows saved photos as cards with "Add another photo" button
 
 import SwiftUI
 import SwiftData
@@ -11,9 +12,10 @@ import PhotosUI
 
 struct ReflectionSheet: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Query private var allCompletions: [HabitCompletion] // For photo count
     @StateObject private var localization = LocalizationManager.shared
+    @StateObject private var quotaManager = PhotoQuotaManager.shared
     
     let habit: Habit
     let completion: HabitCompletion
@@ -23,10 +25,9 @@ struct ReflectionSheet: View {
     @State private var notes = ""
     @State private var isFavorite = false
     @State private var selectedPhoto: PhotosPickerItem?
-    @State private var photoData: Data?
+    @State private var photosData: [Data] = []
     @State private var showPhotoLimitWarning = false
     
-    // UPDATED: SF Symbol moods matching the app's aesthetic
     private let moods = [
         ("Energized", "bolt.fill", "Feeling motivated and ready"),
         ("Calm", "leaf.fill", "Peaceful and centered"),
@@ -39,24 +40,23 @@ struct ReflectionSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    // Header prompt
                     Text("How are you different after completing this?")
                         .font(.system(size: 13, weight: .regular))
                         .fontDesign(.serif)
                         .italic()
-                        .foregroundStyle(Color.dynamicSecondaryLabel)
+                        .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     // Mood selector with SF Symbols
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 6) {
                             Image(systemName: "face.smiling")
-                                .font(.system(size: 12))
+                                .font(.system(size: 13))
                                 .foregroundStyle(Color(hex: habit.colorHex))
                             Text("How did it feel?")
-                                .font(.system(size: 12, weight: .regular))
+                                .font(.system(size: 13, weight: .regular))
                                 .fontDesign(.serif)
-                                .foregroundStyle(Color.dynamicLabel)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                         }
                         
                         VStack(spacing: 8) {
@@ -65,21 +65,20 @@ struct ReflectionSheet: View {
                                     mood = moodOption.0
                                 } label: {
                                     HStack(spacing: 12) {
-                                        // SF Symbol icon instead of emoji
                                         Image(systemName: moodOption.1)
                                             .font(.system(size: 16))
                                             .foregroundStyle(Color(hex: habit.colorHex))
                                         
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(moodOption.0)
-                                                .font(.system(size: 12, weight: .medium))
+                                                .font(.system(size: 13, weight: .medium))
                                                 .fontDesign(.serif)
-                                                .foregroundStyle(Color.dynamicLabel)
+                                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                                             
                                             Text(moodOption.2)
-                                                .font(.system(size: 10, weight: .regular))
+                                                .font(.system(size: 11, weight: .regular))
                                                 .fontDesign(.serif)
-                                                .foregroundStyle(Color.dynamicSecondaryLabel)
+                                                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                                         }
                                         
                                         Spacer()
@@ -93,7 +92,7 @@ struct ReflectionSheet: View {
                                     .padding(14)
                                     .background(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .fill(mood == moodOption.0 ? Color(hex: habit.colorHex).opacity(0.1) : Color.white.opacity(0.3))
+                                            .fill(mood == moodOption.0 ? Color(hex: habit.colorHex).opacity(0.1) : Color.white.opacity(0.2))
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
@@ -112,124 +111,77 @@ struct ReflectionSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 6) {
                             Image(systemName: "text.alignleft")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Color.dynamicSecondaryLabel)
+                                .font(.system(size: 13))
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                             Text("Your Thoughts")
-                                .font(.system(size: 12, weight: .regular))
+                                .font(.system(size: 13, weight: .regular))
                                 .fontDesign(.serif)
-                                .foregroundStyle(Color.dynamicLabel)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                         }
                         
                         TextField("Write what comes to mind...", text: $notes, axis: .vertical)
                             .multilingualTextField()
                             .textFieldStyle(.plain)
-                            .font(.system(size: 12, weight: .regular))
+                            .font(.system(size: 13, weight: .regular))
                             .fontDesign(.serif)
-                            .foregroundStyle(Color.dynamicLabel)
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                             .padding(16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.45))
+                                    .fill(Color.white.opacity(0.20))
                                     .shadow(color: Color.shadowColor, radius: 6, y: 2)
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .strokeBorder(Color.white.opacity(0.4), lineWidth: 1)
+                                    .strokeBorder(Color.white.opacity(0.20), lineWidth: 1)
                             )
                             .lineLimit(4...8)
                     }
                     
-                    // Photo picker
-                    VStack(alignment: .leading, spacing: 8) {
+                    // Multi-photo section with journal-style previews
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 6) {
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Color.dynamicSecondaryLabel)
+                                .font(.system(size: 13))
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                             
-                            Text("Add a Photo (optional)")
-                                .font(.system(size: 12, weight: .regular))
+                            Text("Photos (optional)")
+                                .font(.system(size: 13, weight: .regular))
                                 .fontDesign(.serif)
-                                .foregroundStyle(Color.dynamicLabel)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                             
                             Spacer()
                             
-                            Text("\(getMonthPhotoCount())/20")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundStyle(getMonthPhotoCount() >= 20 ? Color.red : Color.dynamicSecondaryLabel)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(getMonthPhotoCount() >= 20 ? Color.red.opacity(0.1) : Color.white.opacity(0.3))
-                                .clipShape(Capsule())
-                            
-                            if photoData != nil {
-                                Button {
-                                    photoData = nil
-                                    selectedPhoto = nil
-                                } label: {
-                                    Text("Remove")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .fontDesign(.serif)
-                                        .foregroundStyle(.red)
-                                }
-                            }
+                            // Photo quota badge (only shows at 80% capacity)
+                            PhotoQuotaBadge()
                         }
                         
-                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                            if let photoData = photoData, let uiImage = UIImage(data: photoData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 160)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .strokeBorder(Color(hex: habit.colorHex).opacity(0.3), lineWidth: 2)
-                                    )
-                            } else {
-                                VStack(spacing: 12) {
-                                    Image(systemName: "photo.on.rectangle.angled")
-                                        .font(.system(size: 32))
-                                        .foregroundStyle(Color.dynamicSecondaryLabel)
-                                    Text("Tap to add photo")
-                                        .font(.system(size: 12, weight: .regular))
-                                        .fontDesign(.serif)
-                                        .foregroundStyle(Color.dynamicSecondaryLabel)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 120)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.white.opacity(0.3))
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8]))
-                                        .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.3))
-                                )
-                            }
-                        }
-                        .onChange(of: selectedPhoto) { _, newValue in
-                            Task {
-                                if !checkPhotoLimit() {
-                                    selectedPhoto = nil
-                                    return
-                                }
-                                
-                                if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                                    if let uiImage = UIImage(data: data) {
-                                        let resizedImage = resizeImageIfNeeded(uiImage)
-                                        if let compressedData = resizedImage.jpegData(compressionQuality: 0.6) {
-                                            if compressedData.count > 500_000 {
-                                                photoData = resizedImage.jpegData(compressionQuality: 0.4)
-                                            } else {
-                                                photoData = compressedData
+                        // Journal-style preview cards
+                        if !photosData.isEmpty {
+                            VStack(spacing: 12) {
+                                ForEach(Array(photosData.enumerated()), id: \.offset) { index, photoData in
+                                    if let uiImage = UIImage(data: photoData) {
+                                        PhotoPreviewCard(
+                                            image: uiImage,
+                                            index: index + 1,
+                                            total: photosData.count,
+                                            habitColor: Color(hex: habit.colorHex),
+                                            onRemove: {
+                                                removePhoto(at: index)
                                             }
-                                        }
+                                        )
                                     }
                                 }
                             }
                         }
+                        
+                        // ADD PHOTO BUTTON
+                        PhotosPickerButton(
+                            hasExistingPhotos: !photosData.isEmpty,
+                            isAtLimit: quotaManager.isAtLimit,
+                            habitColor: Color(hex: habit.colorHex),
+                            selectedPhoto: $selectedPhoto
+                        )
                     }
                     
                     // Favorite toggle
@@ -242,14 +194,14 @@ struct ReflectionSheet: View {
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Mark as favorite")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.system(size: 13, weight: .medium))
                                         .fontDesign(.serif)
-                                        .foregroundStyle(Color.dynamicLabel)
+                                        .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                                     
                                     Text("View all favorites in Archive")
-                                        .font(.system(size: 10, weight: .regular))
+                                        .font(.system(size: 11, weight: .regular))
                                         .fontDesign(.serif)
-                                        .foregroundStyle(Color.dynamicSecondaryLabel)
+                                        .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                                 }
                             }
                         }
@@ -257,7 +209,7 @@ struct ReflectionSheet: View {
                         .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(isFavorite ? Color.paleMauve.opacity(0.1) : Color.white.opacity(0.3))
+                                .fill(isFavorite ? Color.paleMauve.opacity(0.1) : Color.white.opacity(0.2))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -286,7 +238,7 @@ struct ReflectionSheet: View {
                     Button("Skip") {
                         onDismiss()
                     }
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.system(size: 13, weight: .regular))
                     .fontDesign(.serif)
                 }
                 
@@ -294,17 +246,18 @@ struct ReflectionSheet: View {
                     Button("Save") {
                         saveReflection()
                     }
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .fontDesign(.serif)
                 }
             }
         }
         .presentationDetents([.fraction(0.8)])
         .presentationDragIndicator(.visible)
-        .alert("Photo Limit Reached", isPresented: $showPhotoLimitWarning) {
-            Button("OK") { }
-        } message: {
-            Text("You've added 20 photos this month. To manage storage, consider adding fewer photos or clearing old reflections in Settings.")
+        .photoLimitAlert(isPresented: $showPhotoLimitWarning)
+        .onChange(of: selectedPhoto) { _, newItem in
+            Task {
+                await loadPhoto(from: newItem)
+            }
         }
         .onAppear {
             // Load existing reflection if any
@@ -312,7 +265,7 @@ struct ReflectionSheet: View {
                 mood = existingReflection.mood
                 notes = existingReflection.notes
                 isFavorite = existingReflection.isFavorite
-                photoData = existingReflection.photoData
+                photosData = existingReflection.photosData
             }
         }
     }
@@ -325,15 +278,15 @@ struct ReflectionSheet: View {
             existingReflection.mood = mood
             existingReflection.notes = notes
             existingReflection.isFavorite = isFavorite
-            existingReflection.photoData = photoData
-            print("✅ Updated existing reflection - Favorite: \(isFavorite)")
+            existingReflection.photosData = photosData
+            print("✅ Updated existing reflection - Favorite: \(isFavorite), Photos: \(photosData.count)")
         } else {
             // CREATE new reflection
             let reflection = Reflection(
                 mood: mood,
                 notes: notes,
                 isFavorite: isFavorite,
-                photoData: photoData,
+                photosData: photosData,
                 habitId: habit.id,
                 habitName: habit.name,
                 habitColorHex: habit.colorHex
@@ -346,7 +299,7 @@ struct ReflectionSheet: View {
             completion.reflection = reflection
             print("✅ Created and linked reflection to completion for \(habit.name)")
             print("✅ Favorite status: \(isFavorite)")
-            print("✅ Has photo: \(photoData != nil)")
+            print("✅ Photos count: \(photosData.count)")
         }
         
         // Force save the context
@@ -359,6 +312,43 @@ struct ReflectionSheet: View {
         
         dismiss()
         onDismiss()
+    }
+    
+    /// Load photo from PhotosPicker
+    private func loadPhoto(from item: PhotosPickerItem?) async {
+        guard let item = item else { return }
+        
+        // Check quota before loading
+        guard quotaManager.canAddPhoto() else {
+            showPhotoLimitWarning = true
+            selectedPhoto = nil
+            return
+        }
+        
+        // Load the image data
+        if let data = try? await item.loadTransferable(type: Data.self),
+           let uiImage = UIImage(data: data) {
+            
+            // Resize and compress for performance
+            let resized = resizeImageIfNeeded(uiImage)
+            
+            if let compressedData = resized.jpegData(compressionQuality: 0.8) {
+                await MainActor.run {
+                    photosData.append(compressedData)
+                    quotaManager.recordPhotoAdded()
+                    selectedPhoto = nil
+                    print("📸 Photo added - Total: \(photosData.count)")
+                }
+            }
+        }
+    }
+    
+    /// Remove photo from array
+    private func removePhoto(at index: Int) {
+        guard index < photosData.count else { return }
+        photosData.remove(at: index)
+        quotaManager.recordPhotoRemoved()
+        print("🗑️ Photo removed - Remaining: \(photosData.count)")
     }
     
     private func resizeImageIfNeeded(_ image: UIImage) -> UIImage {
@@ -374,30 +364,100 @@ struct ReflectionSheet: View {
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }
     }
+}
+
+// MARK: - Supporting Views
+
+/// Journal-style photo preview card with remove button
+struct PhotoPreviewCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     
-    private func getMonthPhotoCount() -> Int {
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-        let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth)!
-        
-        let thisMonthPhotos = allCompletions.filter { completion in
-            guard let reflection = completion.reflection,
-                  reflection.photoData != nil else { return false }
-            return reflection.createdAt >= startOfMonth && reflection.createdAt <= endOfMonth
+    let image: UIImage
+    let index: Int
+    let total: Int
+    let habitColor: Color
+    let onRemove: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "photo.fill")
+                    .font(.system(size: 12))
+                    .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                
+                Text("Photo \(index)")
+                    .font(.system(size: 12, weight: .medium))
+                    .fontDesign(.serif)
+                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                
+                Spacer()
+                
+                Button(action: onRemove) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11))
+                        Text("Remove")
+                            .font(.system(size: 12, weight: .medium))
+                            .fontDesign(.serif)
+                    }
+                    .foregroundStyle(.red)
+                }
+            }
+            
+            // Photo preview
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                )
         }
-        
-        return thisMonthPhotos.count
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.2))
+        )
     }
+}
+
+/// Photo picker button with conditional styling
+struct PhotosPickerButton: View {
+    let hasExistingPhotos: Bool
+    let isAtLimit: Bool
+    let habitColor: Color
+    @Binding var selectedPhoto: PhotosPickerItem?
     
-    private func checkPhotoLimit() -> Bool {
-        let monthCount = getMonthPhotoCount()
-        
-        if monthCount >= 20 {
-            showPhotoLimitWarning = true
-            return false
+    var body: some View {
+        PhotosPicker(selection: $selectedPhoto, matching: .images) {
+            HStack(spacing: 8) {
+                Image(systemName: hasExistingPhotos ? "plus.circle" : "camera")
+                    .font(.system(size: 14))
+                    .foregroundStyle(isAtLimit ? Color.dynamicSecondaryLabel : habitColor)
+                
+                Text(hasExistingPhotos ? "Add another photo" : "Add a photo")
+                    .font(.system(size: 13, weight: .medium))
+                    .fontDesign(.serif)
+                    .foregroundStyle(isAtLimit ? Color.dynamicSecondaryLabel : Color.dynamicLabel)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.2))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(
+                                isAtLimit ? Color.clear : Color.white.opacity(0.2),
+                                style: StrokeStyle(lineWidth: 1.5, dash: [4, 4])
+                            )
+                    )
+            )
         }
-        
-        return true
+        .disabled(isAtLimit)
+        .opacity(isAtLimit ? 0.5 : 1.0)
     }
 }

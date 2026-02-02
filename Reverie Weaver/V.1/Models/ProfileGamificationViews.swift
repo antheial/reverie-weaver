@@ -1,26 +1,20 @@
 //
-//  ConstellationBadgeView.swift
+//  ProfileGamificationViews.swift
 //  Reverie Weaver
 //
 //  Created by Antheia Li on 10/24/25.
 //
-//
-// ProfileGamificationViews.swift
-// Reverie Weaver
-//
-// SwiftUI components for the gamification system
-// to be integrated into ProfileView
 //
 
 import SwiftUI
 import SwiftData
 
 // MARK: - Constellation Badge View
-
 struct ConstellationBadgeView: View {
     let constellation: ConstellationBadge
-    let colorScheme: ColorScheme
-    
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
@@ -80,7 +74,7 @@ struct ConstellationBadgeView: View {
                                 .frame(width: 18, height: 18)
                                 .overlay(
                                     Image(systemName: "sparkles")
-                                        .font(.system(size: 8, weight: .bold))
+                                        .font(.system(size: 11, weight: .bold))
                                         .foregroundStyle(.white)
                                 )
                                 .offset(x: 8, y: -8)
@@ -92,7 +86,7 @@ struct ConstellationBadgeView: View {
             }
             
             Text(constellation.name)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .fontDesign(.serif)
                 .foregroundStyle(
                     constellation.isUnlocked
@@ -107,157 +101,220 @@ struct ConstellationBadgeView: View {
     }
 }
 
-// MARK: - Constellation Story Sheet
+// MARK: - Constellation Story View (Magical Artifact Edition)
 
 struct ConstellationStoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     let constellation: ConstellationBadge
+
+    private let goldColor = Color(hex: "D4AF37")
+    private let midnightStart = Color(hex: "0F172A")
+    private let midnightEnd = Color(hex: "151515")
     
     var body: some View {
         ZStack {
-            ReverieWeaverBackground()
+            Color.black.opacity(0.95).ignoresSafeArea()
             
-            ScrollView {
-                VStack(spacing: 24) {
-                    Spacer().frame(height: 20)
+            ScrollView(showsIndicators: false) {
+                VStack {
                     
-                    // Icon
+                    Spacer().frame(height: 50)
+                    
                     ZStack {
-                        Circle()
-                            .fill(
-                                RadialGradient(
-                                    colors: [
-                                        Color(hex: constellation.colorHex).opacity(0.3),
-                                        Color(hex: constellation.colorHex).opacity(0.1),
-                                        Color.clear
-                                    ],
-                                    center: .center,
-                                    startRadius: 0,
-                                    endRadius: 80
-                                )
-                            )
-                            .frame(width: 120, height: 120)
-                            .blur(radius: 20)
-                        
-                        Circle()
-                            .fill(Color(hex: constellation.colorHex).opacity(0.2))
-                            .frame(width: 100, height: 100)
-                            .overlay(
-                                Circle()
-                                    .strokeBorder(
-                                        Color(hex: constellation.colorHex).opacity(0.4),
-                                        lineWidth: 3
-                                    )
-                            )
-                            .shadow(color: Color(hex: constellation.colorHex).opacity(0.3), radius: 20, y: 8)
-                        
-                        Image(systemName: constellation.iconName)
-                            .font(.system(size: 46, weight: .semibold))
-                            .foregroundStyle(Color(hex: constellation.colorHex))
-                    }
-                    
-                    // Title
-                    VStack(spacing: 8) {
-                        Text(constellation.name)
-                            .font(.system(size: 28, weight: .bold))
-                            .fontDesign(.serif)
-                            .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
-
-                        Text("Constellation Unlocked")
-                            .font(.system(size: 11, weight: .semibold))
-                            .tracking(1)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
-                            .background(
-                                Capsule()
-                                    .fill(Color(hex: constellation.colorHex))
-                            )
-                        
-                        if let date = constellation.unlockedDate {
-                            Text(date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.system(size: 11, weight: .regular))
-                                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                        }
-                    }
-                    
-                    // Divider
-                    HStack(spacing: 12) {
-                        Rectangle()
+                        RoundedRectangle(cornerRadius: 24)
                             .fill(
                                 LinearGradient(
-                                    colors: [
-                                        Color.clear,
-                                        Color(hex: constellation.colorHex).opacity(0.3),
-                                        Color.clear
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                                    colors: [midnightStart, midnightEnd],
+                                    startPoint: .top,
+                                    endPoint: .bottom
                                 )
                             )
-                            .frame(height: 1)
+
+                        VStack {
+                            
+                            Spacer()
+                            
+                            ZStack {
+                                // 1. Large Faint Diamond
+                                Image(systemName: "rhombus.fill")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 300, height: 300)
+                                    .foregroundStyle(Color(hex: constellation.colorHex).opacity(0.03))
+                                    .blur(radius: 5)
+                                
+                                // 2. Vertical Axis Line
+                                Rectangle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [.clear, Color(hex: constellation.colorHex).opacity(0.05), .clear],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .frame(width: 1, height: 450)
+                                
+                                // 3. Sharp Thin Outline
+                                Image(systemName: "rhombus")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 260, height: 260)
+                                    .foregroundStyle(Color(hex: constellation.colorHex).opacity(0.05))
+                                    .fontWeight(.thin)
+                            }
+                            .offset(y: 120)
+                            Spacer()
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
+                        
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 18)
+                                .strokeBorder(goldColor.opacity(0.5), lineWidth: 1)
+                                .padding(6)
+                            
+                            RoundedRectangle(cornerRadius: 14)
+                                .strokeBorder(
+                                    goldColor.opacity(0.3),
+                                    style: StrokeStyle(lineWidth: 0.5, dash: [4, 6])
+                                )
+                                .padding(14)
+                            
+                            // Corner Flourishes
+                            VStack {
+                                HStack {
+                                    Image(systemName: "sparkle").font(.system(size: 11)).foregroundStyle(goldColor)
+                                    Spacer()
+                                    Image(systemName: "sparkle").font(.system(size: 11)).foregroundStyle(goldColor)
+                                }
+                                Spacer()
+                                HStack {
+                                    Image(systemName: "sparkle").font(.system(size: 11)).foregroundStyle(goldColor)
+                                    Spacer()
+                                    Image(systemName: "sparkle").font(.system(size: 11)).foregroundStyle(goldColor)
+                                }
+                            }
+                            .padding(10)
+                        }
+                        
+                        VStack(spacing: 0) {
+                            
+                            // 1. Arcana Number
+                            Text(constellation.chapter.romanNumeral)
+                                .font(.system(size: 15, weight: .bold, design: .serif))
+                                .foregroundStyle(goldColor.opacity(0.6))
+                                .padding(.top, 40)
+                            
+                            // 2. THE MAGICAL BURST
+                            ZStack {
+                                ForEach(0..<12) { i in
+                                    Rectangle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color(hex: constellation.colorHex).opacity(0), Color(hex: constellation.colorHex).opacity(0.1)],
+                                                startPoint: .bottom,
+                                                endPoint: .top
+                                            )
+                                        )
+                                        .frame(width: 1, height: 100)
+                                        .offset(y: -50)
+                                        .rotationEffect(.degrees(Double(i) * 30))
+                                }
+                                
+                                // Celestial Rings
+                                Circle()
+                                    .strokeBorder(goldColor.opacity(0.1), lineWidth: 1)
+                                    .frame(width: 140, height: 140)
+                                
+                                Circle()
+                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [2, 10]))
+                                    .foregroundStyle(goldColor.opacity(0.3))
+                                    .frame(width: 160, height: 160)
+                                    .rotationEffect(.degrees(45))
+                                
+                                // Diamond Frame
+                                Rectangle()
+                                    .stroke(goldColor.opacity(0.3), lineWidth: 1)
+                                    .frame(width: 90, height: 90)
+                                    .rotationEffect(.degrees(45))
+                                
+                                // Inner Glow Halo
+                                Circle()
+                                    .fill(Color(hex: constellation.colorHex).opacity(0.15))
+                                    .frame(width: 100, height: 100)
+                                    .blur(radius: 20)
+                                
+                                // The Icon
+                                Image(systemName: constellation.iconName)
+                                    .font(.system(size: 50, weight: .light))
+                                    .foregroundStyle(Color(hex: constellation.colorHex))
+                                    .shadow(color: Color(hex: constellation.colorHex).opacity(0.8), radius: 10)
+                            }
+                            .padding(.vertical, 30)
+                            
+                            // 3. Title (Engraved Look)
+                            Text(constellation.name.uppercased())
+                                .font(.system(size: 22, weight: .bold, design: .serif))
+                                .tracking(3)
+                                .foregroundStyle(Color(hex: "F5E6D3"))
+                                .multilineTextAlignment(.center)
+                                .shadow(color: goldColor.opacity(0.3), radius: 10)
+                                .padding(.horizontal, 30)
+                            
+                            // 4. Alchemical Separator
+                            HStack(spacing: 8) {
+                                Rectangle().fill(LinearGradient(colors: [.clear, goldColor], startPoint: .leading, endPoint: .trailing)).frame(height: 0.5)
+                                Image(systemName: "moon.stars.fill").font(.system(size: 11)).foregroundStyle(goldColor)
+                                Rectangle().fill(LinearGradient(colors: [goldColor, .clear], startPoint: .leading, endPoint: .trailing)).frame(height: 0.5)
+                            }
+                            .frame(width: 120)
+                            .opacity(0.5)
+                            .padding(.vertical, 24)
+                            
+                            // 5. The Lore
+                            Text(constellation.lore(for: WeaverJourneyManager.shared.currentSeason))
+                                .font(.system(size: 13, weight: .regular, design: .serif))
+                                .lineSpacing(8)
+                                .foregroundStyle(Color(hex: "E0E0E0").opacity(0.9))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                                .padding(.bottom, 50)
+                            
+                            Spacer()
+                            
+                            // 6. Unlock Date
+                            if let date = constellation.unlockedDate {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock.arrow.circlepath")
+                                    Text(date.formatted(date: .long, time: .omitted).uppercased())
+                                }
+                                .font(.system(size: 11, weight: .bold, design: .serif))
+                                .tracking(1)
+                                .foregroundStyle(goldColor.opacity(0.5))
+                                .padding(.bottom, 30)
+                            }
+                        }
                     }
-                    .padding(.horizontal, 40)
+                    .frame(width: 340)
+                    .frame(minHeight: 650)
                     
-                    // Story
-                    Text(constellation.story)
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundStyle(
-                            colorScheme == .dark
-                            ? Color.white.opacity(0.95)
-                            : Color.black.opacity(0.85)
-                        )
-                        .lineSpacing(6)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                    
-                    // Category badge
-                    HStack(spacing: 6) {
-                        Image(systemName: "tag.fill")
-                            .font(.system(size: 10))
-                        Text(constellation.category)
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundStyle(Color(hex: constellation.colorHex).opacity(0.8))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color(hex: constellation.colorHex).opacity(0.1))
-                            .overlay(
-                                Capsule()
-                                    .strokeBorder(Color(hex: constellation.colorHex).opacity(0.3), lineWidth: 1)
-                            )
-                    )
-                    
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: 40)
                 }
-                .padding(.horizontal, 24)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    dismiss()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.35))
-                            .frame(width: 32, height: 32)
-                            .shadow(color: Color.shadowColor, radius: 4, y: 2)
-                        Circle()
-                            .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                            .frame(width: 32, height: 32)
-                        Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .semibold))
-                            .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                    }
-                }
+        .overlay(alignment: .topTrailing) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(12)
+                    .background(Circle().fill(.ultraThinMaterial))
+                    .padding()
             }
         }
     }
 }
+
 
 // MARK: - Invisible Achievement Row
 
@@ -289,7 +346,7 @@ struct InvisibleAchievementRow: View {
                     Spacer()
                     
                     Text(achievement.discoveredDate.timeAgo())
-                        .font(.system(size: 10, weight: .regular))
+                        .font(.system(size: 11, weight: .regular))
                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 }
                 
@@ -339,22 +396,22 @@ struct AnniversaryCelebrationCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 50, height: 50)
+                        .frame(width: 36, height: 36)
                         .shadow(color: Color.sageGreen.opacity(0.4), radius: 8, y: 4)
                     
                     Image(systemName: milestone.icon)
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white)
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(milestone.title)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .fontDesign(.serif)
                         .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
 
                     Text("\(milestone.days) days of weaving")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 }
                 
@@ -362,12 +419,8 @@ struct AnniversaryCelebrationCard: View {
             }
             
             Text(milestone.message)
-                .font(.system(size: 13, weight: .regular))
-                .foregroundStyle(
-                    colorScheme == .dark
-                    ? Color.white.opacity(0.95)
-                    : Color.black.opacity(0.85)
-                )
+                .font(.system(size: 12, weight: .regular))
+                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 .lineSpacing(4)
                 .multilineTextAlignment(.leading)
         }
@@ -424,7 +477,7 @@ struct CurrentSeasonBanner: View {
                         .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     
                     Text(season.subtitle)
-                        .font(.system(size: 11, weight: .regular))
+                        .font(.system(size: 12, weight: .regular))
                         .italic()
                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 }
@@ -432,24 +485,18 @@ struct CurrentSeasonBanner: View {
                 Spacer()
                 
                 Text("Day \(daysSinceStart)")
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
             }
             
-            // Subtle divider
             Rectangle()
                 .fill(Color(hex: season.colorHex).opacity(0.15))
                 .frame(height: 1)
                 .padding(.horizontal, -2)
             
-            // Description text
             Text(season.description)
                 .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(
-                    colorScheme == .dark
-                    ? Color.white.opacity(0.85)
-                    : Color.black.opacity(0.75)
-                )
+                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 .lineSpacing(3)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
@@ -466,9 +513,7 @@ struct CurrentSeasonBanner: View {
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MARK: - ✨ TIME-ADAPTIVE WEAVER LEVEL CARD
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// MARK: - TIME-ADAPTIVE WEAVER LEVEL CARD
 
 struct WeaverLevelCard: View {
     let level: WeaverLevel
@@ -480,7 +525,6 @@ struct WeaverLevelCard: View {
         return min(Double(totalCompletions) / Double(next), 1.0)
     }
 
-    // Time-adaptive configuration
     private var config: WeaverLevelCardConfig {
         let hour = Calendar.current.component(.hour, from: Date())
         let period = TimeOfDay(hour: hour)
@@ -491,9 +535,9 @@ struct WeaverLevelCard: View {
         VStack(spacing: config.spacing) {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundStyle(config.iconColor)
-                    .shadow(color: config.iconGlow, radius: config.iconGlowRadius)  // ✨ Time-adaptive glow
+                    .shadow(color: config.iconGlow, radius: config.iconGlowRadius)
 
                 Text(level.title)
                     .font(.system(size: 14, weight: .medium))
@@ -503,70 +547,63 @@ struct WeaverLevelCard: View {
                 Spacer()
 
                 Text("Level \(level.level)")
-                    .font(.system(size: 11, weight: .regular))
+                    .font(.system(size: 12, weight: .regular))
                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
             }
 
-            // Time-adaptive progress bar
             if let next = level.next {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        // Background track
                         RoundedRectangle(cornerRadius: config.progressBarRadius)
                             .fill(config.progressTrackColor)
 
-                        // Progress fill with time-adaptive gradient
                         RoundedRectangle(cornerRadius: config.progressBarRadius)
                             .fill(config.progressGradient)
                             .frame(width: geometry.size.width * progress)
                             .shadow(
                                 color: config.progressGlow,
                                 radius: config.progressGlowRadius
-                            )  // ✨ Glowing progress bar
+                            )
                             .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
                     }
                 }
                 .frame(height: config.progressBarHeight)
 
-                // Remaining completions text
                 if totalCompletions < next {
                     Text("\(next - totalCompletions) more to next level")
-                        .font(.system(size: 9, weight: .regular))
+                        .font(.system(size: 11, weight: .regular))
                         .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             } else {
-                // Transcendent level message
                 HStack(spacing: 6) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 8))
+                        .font(.system(size: 11))
                         .foregroundStyle(config.transcendentIconColor)
                         .shadow(color: config.transcendentGlow, radius: config.transcendentGlowRadius)
 
                     Text("Transcendent Level Reached")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .italic()
                         .foregroundStyle(config.transcendentTextColor)
                         .shadow(color: config.transcendentGlow, radius: 1)
 
                     Image(systemName: "star.fill")
-                        .font(.system(size: 8))
+                        .font(.system(size: 11))
                         .foregroundStyle(config.transcendentIconColor)
                         .shadow(color: config.transcendentGlow, radius: config.transcendentGlowRadius)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .padding(config.padding)  // ✨ Time-adaptive padding
-        .reverieCardStyle(colorScheme: colorScheme)  // ✨ Already time-adaptive!
+        .padding(config.padding)
+        .reverieCardStyle(colorScheme: colorScheme)
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MARK: - WEAVER LEVEL CARD CONFIGURATION
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-private struct WeaverLevelCardConfig {
+struct WeaverLevelCardConfig {
     let spacing: CGFloat
     let padding: CGFloat
     let iconColor: Color
@@ -755,130 +792,6 @@ private struct WeaverLevelCardConfig {
         }
     }
 }
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// WHAT ADAPTS THROUGHOUT THE DAY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-/*
-
-VISUAL CHANGES BY TIME OF DAY:
-═════════════════════════════════════════════════════════════
-
-🌙 NIGHT (12-5 AM, 9 PM-12 AM)
-   ✨ Icon: Soft purple glow
-   📊 Progress bar: Slightly thicker (5pt), glowing edges
-   🎨 Colors: Richer, more saturated
-   📐 Layout: More spacious (18pt padding)
-   💫 Feel: Dreamy, accomplished
-
-🌅 DAWN (5-7 AM)
-   ✨ Icon: Warm orange morning glow
-   📊 Progress bar: Orange-tinted gradient start
-   🎨 Colors: Awakening warmth
-   📐 Layout: Gentle spacing (17pt)
-   💫 Feel: New beginnings
-
-☀️ MORNING/AFTERNOON (7 AM-5 PM)
-   ✨ Icon: No glow (crisp & clear)
-   📊 Progress bar: Standard (4pt), no glow
-   🎨 Colors: Lighter, efficient
-   📐 Layout: Compact (15pt padding)
-   💫 Feel: Professional, focused
-
-🌆 GOLDEN HOUR (5-7 PM)
-   ✨ Icon: Strong golden glow (4pt)
-   📊 Progress bar: Orange gradient, glowing (2.5pt)
-   🎨 Colors: Warm, celebratory
-   📐 Layout: Expanded (18pt)
-   💫 Feel: Achievement unlocked!
-
-🌃 DUSK (7-9 PM)
-   ✨ Icon: Purple twilight glow (4pt)
-   📊 Progress bar: Purple-tinted, glowing (3pt)
-   🎨 Colors: Magical, ethereal
-   📐 Layout: Spacious (18pt)
-   💫 Feel: Mystical transcendence
-
-🌑 DARK MODE (Any Time)
-   ✨ Icon: Subtle purple glow (2pt)
-   📊 Progress bar: Standard gradient
-   🎨 Colors: Consistent elegance
-   📐 Layout: Balanced (16pt)
-   💫 Feel: Sophisticated
-
-
-COMPARISON TABLE:
-═════════════════════════════════════════════════════════════
-
-┌──────────────┬─────────┬────────┬─────────────────────────┐
-│ Time         │ Padding │ Bar Ht │ Glow Effect             │
-├──────────────┼─────────┼────────┼─────────────────────────┤
-│ Night        │ 18pt    │ 5pt    │ 🟣 Purple (2pt glow)    │
-│ Dawn         │ 17pt    │ 4.5pt  │ 🟠 Orange (1.5pt glow)  │
-│ Morning/Day  │ 15pt    │ 4pt    │ None (crisp)            │
-│ Afternoon    │ 16pt    │ 4pt    │ 🟠 Subtle (1pt glow)    │
-│ Golden Hour  │ 18pt    │ 5pt    │ 🟠 Strong (2.5pt glow)  │
-│ Dusk         │ 18pt    │ 5pt    │ 🟣 Purple (3pt glow)    │
-│ Dark Mode    │ 16pt    │ 4pt    │ Minimal (consistent)    │
-└──────────────┴─────────┴────────┴─────────────────────────┘
-
-
-TRANSCENDENT LEVEL MESSAGING:
-═════════════════════════════════════════════════════════════
-
-When max level is reached, the card shows special effects:
-
-🌅 Dawn: ⭐ "Transcendent Level" ⭐ with warm orange glow
-🌆 Golden Hour: ⭐ Strong golden aura around stars ⭐
-🌃 Dusk: ⭐ Purple twilight magic around message ⭐
-🌙 Night: ⭐ Soft luminescent glow ⭐
-
-The transcendent message feels EARNED and SPECIAL!
-
-
-WHY THESE CHANGES MATTER:
-═════════════════════════════════════════════════════════════
-
-✨ Progress Bar Glow:
-   • Golden Hour: Achievement feels GLORIOUS
-   • Dusk: Progress feels MAGICAL
-   • Day: Clean and professional
-   • Night: Gentle and encouraging
-
-🎨 Gradient Colors:
-   • Dawn/Golden Hour: Orange tint = warmth, growth
-   • Dusk: Purple tint = mystical achievement
-   • Day: Standard colors = clarity
-   • Adapts to the emotion of the time
-
-📐 Spacing & Size:
-   • More spacious at night = celebration
-   • Compact during day = efficiency
-   • Progress bar slightly thicker when glowing = emphasis
-
-💫 Overall Psychology:
-   • Morning: "Let's get to work!"
-   • Golden Hour: "Look how far you've come!"
-   • Dusk: "You're transcending!"
-   • Night: "Rest, you've earned it"
-
-
-IMPLEMENTATION NOTES:
-═════════════════════════════════════════════════════════════
-
-✅ Drop-in replacement for existing WeaverLevelCard
-✅ All animations preserved (spring animation)
-✅ Works with existing WeaverLevel model
-✅ Integrates with timeAdaptiveText
-✅ Uses time-adaptive card style
-✅ Consistent with Reverie Weaver aesthetic
-✅ Performance: Minimal overhead (just config calculation)
-
-The card now CELEBRATES progress differently throughout
-the day, making achievement feel more meaningful!
-
-*/
 
 // MARK: - Helper Extensions
 

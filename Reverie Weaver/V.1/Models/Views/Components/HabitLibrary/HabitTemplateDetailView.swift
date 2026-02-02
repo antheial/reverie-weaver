@@ -2,7 +2,6 @@
 // HabitTemplateDetailView.swift
 // Reverie Weaver
 //
-// Adaptive version — matches DeskView and ReverieWeaverBackground styling
 //
 
 import SwiftUI
@@ -15,12 +14,11 @@ struct HabitTemplateDetailView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     @StateObject private var localization = LocalizationManager.shared
-    @State private var showAddSuccess = false
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                // MARK: - Adaptive Time-Based Background
+            ZStack(alignment: .top) {
+                // Adaptive Background
                 ReverieWeaverBackground()
                     .overlay(
                         Color.black.opacity(0.02)
@@ -31,28 +29,13 @@ struct HabitTemplateDetailView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
                         
-                        // MARK: - Hero Section
+                        // Hero Section
                         VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        RadialGradient(
-                                            colors: [
-                                                template.category.color.opacity(0.65),
-                                                template.category.color.opacity(0.2),
-                                                Color.clear
-                                            ],
-                                            center: .center,
-                                            startRadius: 0,
-                                            endRadius: 80
-                                        )
-                                    )
-                                    .frame(width: 120, height: 120)
-                                
-                                Image(systemName: template.icon)
-                                    .font(.system(size: 38))
-                                    .foregroundStyle(template.category.color)
-                            }
+                            // Breathing Orb Component
+                            HabitHeroOrb(
+                                color: template.category.color,
+                                icon: template.icon
+                        )
                             
                             VStack(spacing: 8) {
                                 Text(template.name)
@@ -64,9 +47,9 @@ struct HabitTemplateDetailView: View {
                                 HStack(spacing: 12) {
                                     HStack(spacing: 4) {
                                         Image(systemName: template.category.icon)
-                                            .font(.system(size: 11))
+                                            .font(.system(size: 12))
                                         Text(localization.localize("category.\(template.category.rawValue.replacingOccurrences(of: " ", with: ""))"))
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(.system(size: 13, weight: .medium))
                                             .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                                     }
                                     .foregroundStyle(template.category.color)
@@ -79,17 +62,16 @@ struct HabitTemplateDetailView: View {
                                         .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
                                     
                                     Text(template.estimatedMinutes)
-                                        .font(.system(size: 12, weight: .regular))
+                                        .font(.system(size: 13, weight: .regular))
                                         .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
                                 }
                             }
                         }
-                        .padding(.top, 12)
                         
-                        // MARK: - Description
+                        // Description
                         VStack(alignment: .leading, spacing: 12) {
                             Text(localization.localize("library.description"))
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 12, weight: .semibold))
                                 .fontDesign(.serif)
                                 .textCase(.uppercase)
                                 .tracking(0.5)
@@ -99,34 +81,33 @@ struct HabitTemplateDetailView: View {
                                 .font(.system(size: 12, weight: .regular))
                                 .lineSpacing(4)
                                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                                .adaptiveTextScrim(colorScheme: colorScheme)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
                         .reverieCardStyle(colorScheme: colorScheme)
                         
-                        // MARK: - Frequency
+                        // Frequency
                         HStack {
                             Image(systemName: "calendar")
                                 .font(.system(size: 14))
                                 .foregroundStyle(template.category.color)
                             
                             Text(localization.localize("library.frequency"))
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 13, weight: .medium))
                                 .fontDesign(.serif)
                                 .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                             
                             Spacer()
                             
                             Text(template.suggestedFrequency)
-                                .font(.system(size: 12, weight: .regular))
+                                .font(.system(size: 13, weight: .regular))
                                 .fontDesign(.serif)
                                 .timeAdaptiveText(colorScheme: colorScheme, style: .accent)
                         }
                         .padding(14)
                         .reverieCardStyle(colorScheme: colorScheme)
                         
-                        // MARK: - Benefits
+                        // Benefits
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 6) {
                                 Image(systemName: "heart.fill")
@@ -134,7 +115,7 @@ struct HabitTemplateDetailView: View {
                                     .foregroundStyle(Color.terracottaRose)
                                 
                                 Text(localization.localize("library.benefits"))
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 13, weight: .medium))
                                     .fontDesign(.serif)
                                     .textCase(.uppercase)
                                     .tracking(0.5)
@@ -149,9 +130,8 @@ struct HabitTemplateDetailView: View {
                                             .foregroundStyle(template.category.color)
                                         
                                         Text(benefit)
-                                            .font(.system(size: 12, weight: .regular))
+                                            .font(.system(size: 13, weight: .regular))
                                             .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                                            .adaptiveTextScrim(colorScheme: colorScheme)
                                         
                                         Spacer(minLength: 0)
                                     }
@@ -162,7 +142,7 @@ struct HabitTemplateDetailView: View {
                         .padding(14)
                         .reverieCardStyle(colorScheme: colorScheme)
                         
-                        // MARK: - Tips
+                        // Tips
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 6) {
                                 Image(systemName: "lightbulb.fill")
@@ -170,7 +150,7 @@ struct HabitTemplateDetailView: View {
                                     .foregroundStyle(Color.paleMauve.opacity(1.0))
                                 
                                 Text(localization.localize("library.tips"))
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.system(size: 13, weight: .semibold))
                                     .fontDesign(.serif)
                                     .textCase(.uppercase)
                                     .tracking(0.5)
@@ -178,11 +158,10 @@ struct HabitTemplateDetailView: View {
                             }
                             
                             Text(template.tips)
-                                .font(.system(size: 12, weight: .regular))
+                                .font(.system(size: 13, weight: .regular))
                                 .fontDesign(.serif)
                                 .lineSpacing(4)
                                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                                .adaptiveTextScrim(colorScheme: colorScheme)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(14)
@@ -190,40 +169,32 @@ struct HabitTemplateDetailView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 100)
+                    .padding(.top, 60)
                 }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
+                
+                // Floating Close Button (Top Right)
+                HStack {
+                    Spacer()
+                    GlassCloseButton {
                         dismiss()
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.35))
-                                .frame(width: 28, height: 28)
-                                .shadow(color: Color.shadowColor, radius: 4, y: 2)
-                            
-                            Circle()
-                                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                                .frame(width: 28, height: 28)
-                            
-                            Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .semibold))
-                                .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
-                        }
                     }
+                    .accessibilityLabel("Close")
+                    .accessibilityHint("Close habit template details")
                 }
+                .padding(.horizontal)
+                .padding(.top, 10)
             }
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
             .overlay(alignment: .bottomTrailing) {
-                // MARK: - Add Button (Restored Original Style)
+                // Add Button
                 Button {
                     onAddHabit()
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
                             .font(.system(size: 16, weight: .semibold))
-                        Text("Add")
+                        Text(localization.localize("desk.habits.add"))
                             .font(.system(size: 14, weight: .semibold))
                             .fontDesign(.serif)
                     }
@@ -237,7 +208,70 @@ struct HabitTemplateDetailView: View {
                 .buttonStyle(.plain)
                 .padding(.trailing, 24)
                 .padding(.bottom, 32)
+                .accessibilityLabel("Add this habit")
             }
         }
+    }
+}
+
+// MARK: - Subviews
+
+fileprivate struct HabitHeroOrb: View {
+    let color: Color
+    let icon: String
+    
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @State private var isBreathing = false
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(color)
+                .frame(width: 100, height: 100)
+                .blur(radius: 20)
+                .opacity(isBreathing ? 0.3 : 0.15)
+                .scaleEffect(isBreathing ? 1.2 : 0.95)
+            
+            Circle()
+                .strokeBorder(
+                    BorderGradient(color: color),
+                    lineWidth: 8
+                )
+                .frame(width: 100, height: 100)
+                .blur(radius: 3)
+                .opacity(isBreathing ? 0.8 : 0.5)
+                .scaleEffect(isBreathing ? 1.05 : 0.98)
+            
+            Image(systemName: icon)
+                .font(.system(size: 40))
+                .foregroundStyle(color)
+                .shadow(color: Color.white.opacity(0.5), radius: 10, x: 0, y: 0)
+                .scaleEffect(isBreathing ? 1.02 : 0.98)
+        }
+        .onAppear {
+            let isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+            let shouldAnimate = !isLowPower && !reduceMotion
+            
+            if shouldAnimate {
+                withAnimation(
+                    .easeInOut(duration: 5.0)
+                    .repeatForever(autoreverses: true)
+                ) {
+                    isBreathing = true
+                }
+            }
+        }
+    }
+    
+    private func BorderGradient(color: Color) -> AngularGradient {
+        AngularGradient(
+            gradient: Gradient(colors: [
+                color.opacity(0.3),
+                color.opacity(0.8),
+                color.opacity(0.3),
+                color.opacity(0.8)
+            ]),
+            center: .center
+        )
     }
 }

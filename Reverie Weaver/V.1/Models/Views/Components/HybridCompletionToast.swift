@@ -3,29 +3,30 @@
 // ReverieWeaver
 //
 // Hybrid toast: Clear messaging + Reverie aesthetic + Auto-dismiss
-// ✅ Uses SF Symbols for consistency
-// ✅ No progress bar (clean & minimal)
-// ✅ Matches app's design language
+//    Uses SF Symbols for consistency
+//    No progress bar (clean & minimal)
+//    Matches app's design language
+//    ENHANCED: Supports "Long Break Disabled" logic
 //
 
 import SwiftUI
 
 struct HybridCompletionToast: View {
-    let sessionType: TimerState  // ✅ FIXED: Removed PomodoroTimerManager. prefix
+    let sessionType: TimerState
     let sessionCount: Int
+    var isLongBreakEnabled: Bool = true
+    
     let onStartBreak: () -> Void
     let onDismiss: () -> Void
     
-    @State private var offset: CGFloat = -200
+    @State private var offset: CGFloat = -150
     @State private var opacity: Double = 0
+    @State private var isVisible: Bool = true
     
     var body: some View {
         VStack {
-            // Toast card at top
             VStack(spacing: 0) {
-                // Main content
                 HStack(spacing: 14) {
-                    // Icon with subtle animation
                     ZStack {
                         Circle()
                             .fill(
@@ -52,39 +53,38 @@ struct HybridCompletionToast: View {
                         Text(title)
                             .font(.system(size: 15, weight: .semibold))
                             .fontDesign(.serif)
-                            .foregroundStyle(Color.dynamicLabel)
+                            .foregroundStyle(Color.primary)
                         
                         Text(subtitle)
                             .font(.system(size: 13, weight: .regular))
                             .fontDesign(.serif)
-                            .foregroundStyle(Color.dynamicSecondaryLabel)
+                            .foregroundStyle(Color.secondary)
                             .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     
                     Spacer()
                     
-                    // Close button
-                    Button(action: dismissToast) {
+                    Button(action: animateAndDismiss) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 22))
-                            .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.4))
+                            .foregroundStyle(Color.secondary.opacity(0.4))
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 18)
                 .padding(.vertical, 16)
                 
-                // Action buttons (only for work session completion)
                 if sessionType == .running {
                     Divider()
                         .opacity(0.2)
                     
                     HStack(spacing: 0) {
-                        Button(action: dismissToast) {
+                        Button(action: animateAndDismiss) {
                             Text("Later")
                                 .font(.system(size: 14, weight: .medium))
                                 .fontDesign(.serif)
-                                .foregroundStyle(Color.dynamicSecondaryLabel)
+                                .foregroundStyle(Color.secondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
                         }
@@ -94,14 +94,19 @@ struct HybridCompletionToast: View {
                             .frame(height: 40)
                             .opacity(0.2)
                         
+                        // 'Start Break' Button
                         Button(action: {
-                            onStartBreak()
+                            animateAndDismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                onStartBreak()
+                            }
                         }) {
-                            HStack(spacing: 7) {
-                                Image(systemName: sessionCount % 4 == 0 ? "moon.stars.fill" : "cup.and.saucer.fill")
+                            HStack(spacing: 6) {
+                                // Dynamic icon based on next break type
+                                Image(systemName: isNextBreakLong ? "moon.stars.fill" : "cup.and.saucer.fill")
                                     .font(.system(size: 12, weight: .semibold))
                                 
-                                Text(sessionCount % 4 == 0 ? "Long Break" : "Short Break")
+                                Text(isNextBreakLong ? "Long Break" : "Short Break")
                                     .font(.system(size: 14, weight: .semibold))
                                     .fontDesign(.serif)
                             }
@@ -124,9 +129,9 @@ struct HybridCompletionToast: View {
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.6),
-                                Color.white.opacity(0.2),
-                                Color.white.opacity(0.1)
+                                .white.opacity(0.6),
+                                .white.opacity(0.2),
+                                .white.opacity(0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -135,27 +140,32 @@ struct HybridCompletionToast: View {
                     )
             )
             .padding(.horizontal, 16)
-            .padding(.top, 60) // Below status bar
+            .padding(.top, 60)
             .offset(y: offset)
             .opacity(opacity)
             
             Spacer()
         }
         .onAppear {
-            // Slide in from top
             withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
                 offset = 0
                 opacity = 1
             }
             
-            // Auto-dismiss after 6 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
-                dismissToast()
+                if isVisible {
+                    animateAndDismiss()
+                }
             }
         }
     }
     
-    private func dismissToast() {
+    // MARK: - Logic Helpers
+    
+    private func animateAndDismiss() {
+        guard isVisible else { return }
+        isVisible = false
+        
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             offset = -200
             opacity = 0
@@ -166,60 +176,69 @@ struct HybridCompletionToast: View {
         }
     }
     
-    // MARK: - Computed Properties
+    private var isNextBreakLong: Bool {
+        return sessionCount > 0 && (sessionCount % 4 == 0)
+    }
+    
+    // MARK: - Computed Properties (Styling)
     
     private var iconColor: Color {
         switch sessionType {
-        case .running:
-            return Color.sageGreen
-        case .shortBreak:
-            return Color.dustyBlue
-        case .longBreak:
-            return Color.paleMauve
-        default:
-            return Color.sageGreen
+        case .running:      return Color.sageGreen
+        case .shortBreak:   return Color.dustyBlue
+        case .longBreak:    return Color.paleMauve
+        default:            return Color.sageGreen
         }
     }
     
     private var iconSymbol: String {
         switch sessionType {
-        case .running:
-            return "checkmark.circle.fill"
-        case .shortBreak:
-            return "cup.and.saucer.fill"
-        case .longBreak:
-            return "moon.stars.fill"
-        default:
-            return "checkmark.circle.fill"
+        case .running:      return "checkmark.circle.fill"
+        case .shortBreak:   return "cup.and.saucer.fill"
+        case .longBreak:    return "moon.stars.fill"
+        default:            return "checkmark.circle.fill"
         }
     }
     
     private var title: String {
         switch sessionType {
-        case .running:
-            return "Focus Session Complete"
-        case .shortBreak:
-            return "Break Complete"
-        case .longBreak:
-            return "Long Break Complete"
-        default:
-            return "Session Complete"
+        case .running:      return "Focus Session Complete"
+        case .shortBreak:   return "Break Complete"
+        case .longBreak:    return "Long Break Complete"
+        default:            return "Session Complete"
         }
     }
     
     private var subtitle: String {
         switch sessionType {
         case .running:
-            let isLongBreak = sessionCount % 4 == 0
-            return isLongBreak
-                ? "Well done. Time for a 15-minute rest."
-                : "Great work. Take a 5-minute break."
+            //  WORK SESSION COMPLETE
+            // This toast appears immediately AFTER completing a work session
+            // So we're prompting the user about the UPCOMING break
+            if isNextBreakLong {
+                if isLongBreakEnabled {
+                    return "Well done. Time for a 15-minute rest."
+                } else {
+                    return "Cycle complete! Ready to continue flow?"
+                }
+            } else {
+                return "Great work. Take a 5-minute break."
+            }
+            
         case .shortBreak:
+            //    SHORT BREAK COMPLETE
+            // This toast appears immediately AFTER completing a break
+            // So we're prompting the user that they're ready to continue
             return "Refreshed? Ready to continue weaving."
+            
         case .longBreak:
+            //    LONG BREAK COMPLETE
+            // This toast appears immediately AFTER completing a long break
+            // So we're prompting the user that they're well-rested and ready
             return "Well rested. Begin your next cycle."
+            
         default:
-            return "Well done."
+            return "Session recorded successfully."
         }
     }
 }
@@ -227,17 +246,14 @@ struct HybridCompletionToast: View {
 // MARK: - Preview
 #Preview {
     ZStack {
-        Color.gray.opacity(0.2).ignoresSafeArea()
+        Color.black.opacity(0.1).ignoresSafeArea()
         
         HybridCompletionToast(
             sessionType: .running,
-            sessionCount: 3,
-            onStartBreak: {
-                print("Start break tapped")
-            },
-            onDismiss: {
-                print("Dismiss tapped")
-            }
+            sessionCount: 4,
+            isLongBreakEnabled: true,
+            onStartBreak: {},
+            onDismiss: {}
         )
     }
 }

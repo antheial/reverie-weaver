@@ -2,8 +2,6 @@
 // FavoritesTimelineView.swift
 // Reverie Weaver
 //
-// Ink-on-Paper Edition – SIMPLE + Category Filters
-// All errors fixed with proper ASCII quotes
 //
 
 import SwiftUI
@@ -14,9 +12,13 @@ struct FavoritesTimelineView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     // MARK: - Queries
-    @Query(filter: #Predicate<HabitCompletion> { completion in
-        completion.reflection?.isFavorite == true
-    })
+    @Query(
+        filter: #Predicate<HabitCompletion> { completion in
+            completion.reflection != nil && completion.reflection?.isFavorite == true
+        },
+        sort: \HabitCompletion.completedAt,
+        order: .reverse
+    )
     private var allFavorites: [HabitCompletion]
     
     @Query private var allHabits: [Habit]
@@ -25,19 +27,23 @@ struct FavoritesTimelineView: View {
     @State private var currentDate = Date()
     @State private var showMonthPicker = false
     @State private var selectedCategory: String? = nil
+    @State private var showPhotosOnly = false
     @State private var showDeleteAlert = false
     @State private var itemToDelete: HabitCompletion? = nil
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    
+    // MARK: - Optimization
+    private var habitMap: [String: Habit] {
+        Dictionary(uniqueKeysWithValues: allHabits.map { ($0.name, $0) })
+    }
     
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 headerSection
                 
-                if !availableCategories.isEmpty {
-                    categoryFilterSection
-                }
+                categoryFilterSection
                 
                 dottedDivider
                     .padding(.horizontal, 24)
@@ -45,7 +51,7 @@ struct FavoritesTimelineView: View {
                 if filteredFavorites.isEmpty {
                     emptyStateView
                 } else {
-                    VStack(spacing: 18) {
+                    LazyVStack(spacing: 24) {
                         ForEach(sortedWeeks, id: \.self) { week in
                             if let weekFavorites = groupedFilteredFavorites[week] {
                                 weekSection(week, entries: weekFavorites)
@@ -82,6 +88,7 @@ struct FavoritesTimelineView: View {
     }
     
     // MARK: - Header
+    
     private var headerSection: some View {
         VStack(spacing: 6) {
             Text("Favorite Reflections")
@@ -93,7 +100,7 @@ struct FavoritesTimelineView: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             } label: {
                 Text(monthYearString)
-                    .font(.system(size: 11, weight: .medium, design: .serif))
+                    .font(.system(size: 12, weight: .medium, design: .serif))
                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                     .padding(.vertical, 2)
                     .contentShape(Rectangle())
@@ -104,6 +111,7 @@ struct FavoritesTimelineView: View {
     }
     
     // MARK: - Category Filter
+    
     private var categoryFilterSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -112,6 +120,8 @@ struct FavoritesTimelineView: View {
                 ForEach(availableCategories, id: \.self) { category in
                     categoryChip(category: category, label: category)
                 }
+                
+                photosOnlyChip
             }
             .padding(.horizontal, 24)
         }
@@ -125,7 +135,7 @@ struct FavoritesTimelineView: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
             Text(label)
-                .font(.system(size: 10, weight: .medium, design: .serif))
+                .font(.system(size: 11, weight: .medium, design: .serif))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
                 .background(
@@ -151,22 +161,52 @@ struct FavoritesTimelineView: View {
         }
     }
     
+    private var photosOnlyChip: some View {
+        Button {
+            withAnimation { showPhotosOnly.toggle() }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "photo.fill")
+                    .font(.system(size: 11))
+                Text("With Photos")
+                    .font(.system(size: 11, weight: .medium, design: .serif))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(showPhotosOnly ? Color.dustyBlue.opacity(0.2) : Color.clear)
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(
+                        showPhotosOnly ? Color.dustyBlue : Color.inkSecondary.opacity(0.25),
+                        lineWidth: 0.5
+                    )
+            )
+            .foregroundStyle(showPhotosOnly ? Color.dustyBlue : Color.inkSecondary)
+        }
+    }
+    
+    // MARK: - Empty State
+    
     private var emptyStateView: some View {
         VStack(spacing: 12) {
-            Text(selectedCategory == nil ?
-                 "No favorite reflections this month." :
-                 "No favorites in this category.")
-                .font(.system(size: 12, weight: .regular, design: .serif))
+            Text(emptyStateMessage)
+                .font(.system(size: 13, weight: .regular, design: .serif))
                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                .multilineTextAlignment(.center)
             
-            if selectedCategory != nil {
+            if selectedCategory != nil || showPhotosOnly {
                 Button {
                     withAnimation {
                         selectedCategory = nil
+                        showPhotosOnly = false
                     }
                 } label: {
-                    Text("Clear Filter")
-                        .font(.system(size: 11, weight: .medium, design: .serif))
+                    Text("Clear Filters")
+                        .font(.system(size: 12, weight: .medium, design: .serif))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(
@@ -178,35 +218,64 @@ struct FavoritesTimelineView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal, 40)
         .padding(.top, 80)
     }
     
+    private var emptyStateMessage: String {
+        if showPhotosOnly && selectedCategory != nil {
+            return "No favorites with photos in this category."
+        } else if showPhotosOnly {
+            return "No favorites with photos this month.\nAdd photos to your reflections to see them here!"
+        } else if selectedCategory != nil {
+            return "No favorites in this category."
+        } else {
+            return "No favorite reflections this month."
+        }
+    }
+    
     // MARK: - Week Section
+    
     private func weekSection(_ week: Int, entries: [HabitCompletion]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: "heart.fill")
-                    .font(.system(size: 10))
+                    .font(.system(size: 11))
                     .foregroundStyle(Color.terracottaRose)
-                Text(weekTitle(for: week))
-                    .font(.system(size: 12, weight: .medium, design: .serif))
-                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                
+                // Using first entry to accurately determine week start/end label
+                if let firstEntry = entries.first {
+                    Text(weekTitle(for: firstEntry.completedAt))
+                        .font(.system(size: 13, weight: .medium, design: .serif))
+                        .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                }
                 
                 Spacer()
                 
+                if weekPhotoCount(entries) > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.dustyBlue)
+                        Text("\(weekPhotoCount(entries))")
+                            .font(.system(size: 11, weight: .bold, design: .serif))
+                            .foregroundStyle(Color.dustyBlue)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Color.dustyBlue.opacity(0.1)))
+                }
+                
                 Text("\(entries.count)")
-                    .font(.system(size: 9, weight: .bold, design: .serif))
+                    .font(.system(size: 11, weight: .bold, design: .serif))
                     .foregroundStyle(Color.terracottaRose)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(Color.terracottaRose.opacity(0.1))
-                    )
+                    .background(Capsule().fill(Color.terracottaRose.opacity(0.1)))
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(entries.sorted(by: { $0.completedAt < $1.completedAt }), id: \.id) { entry in
+                ForEach(entries.sorted(by: { $0.completedAt > $1.completedAt }), id: \.id) { entry in
                     if let reflection = entry.reflection {
                         favoriteEntryCard(entry: entry, reflection: reflection)
                     }
@@ -218,41 +287,87 @@ struct FavoritesTimelineView: View {
         }
     }
     
+    private func weekPhotoCount(_ entries: [HabitCompletion]) -> Int {
+        entries.reduce(0) { count, entry in
+            count + (entry.reflection?.photosData.count ?? 0)
+        }
+    }
+    
     // MARK: - Entry Card
+    
     private func favoriteEntryCard(entry: HabitCompletion, reflection: Reflection) -> some View {
         Button {
             openLoom(for: entry)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
+                // 1. Photo Thumbnail
+                if !reflection.photosData.isEmpty,
+                   let firstPhotoData = reflection.photosData.first,
+                   let uiImage = UIImage(data: firstPhotoData) {
+                    ZStack(alignment: .bottomTrailing) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 60, height: 60)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        
+                        if reflection.photosData.count > 1 {
+                            Text("\(reflection.photosData.count)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(Color.black.opacity(0.7)))
+                                .padding(3)
+                        }
+                    }
+                }
+                
+                // 2. Content
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(reflection.habitName)
-                        .font(.system(size: 11, weight: .medium, design: .serif))
-                        .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                    HStack(spacing: 6) {
+                        Text(reflection.habitName)
+                            .font(.system(size: 12, weight: .medium, design: .serif))
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                        
+                        if !reflection.photosData.isEmpty && reflection.photosData.count == 1 {
+                             Image(systemName: "photo.fill")
+                                 .font(.system(size: 11))
+                                 .foregroundStyle(Color.dustyBlue.opacity(0.6))
+                        }
+                    }
                     
                     if !reflection.notes.isEmpty {
                         Text("\"\(reflection.notes)\"")
-                            .font(.system(size: 10, design: .serif))
+                            .font(.system(size: 11, design: .serif))
                             .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                             .lineLimit(2)
                     }
                     
-                    Text(shortDate(entry.completedAt))
-                        .font(.system(size: 9, weight: .medium))
-                        .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                    HStack(spacing: 6) {
+                        Text(shortDate(entry.completedAt))
+                            .font(.system(size: 11, weight: .medium))
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                        
+                        Text("· \(reflection.mood)")
+                            .font(.system(size: 11, weight: .medium))
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
+                // 3. Action Button
                 Button {
                     itemToDelete = entry
                     showDeleteAlert = true
                 } label: {
                     Image(systemName: "heart.slash.fill")
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.terracottaRose.opacity(0.6))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
             .padding(.horizontal, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -270,10 +385,12 @@ struct FavoritesTimelineView: View {
     private func unfavoriteItem(_ entry: HabitCompletion) {
         guard let reflection = entry.reflection else { return }
         
+        let impact = UIImpactFeedbackGenerator(style: .soft)
+        impact.impactOccurred()
+        
         do {
             reflection.isFavorite = false
             try modelContext.save()
-            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         } catch {
             errorMessage = "Failed to remove favorite: \(error.localizedDescription)"
             showErrorAlert = true
@@ -282,6 +399,7 @@ struct FavoritesTimelineView: View {
     
     private func openLoom(for completion: HabitCompletion) {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        // TODO: Navigate to LoomDayView(date: completion.completedAt)
     }
     
     // MARK: - Divider
@@ -295,14 +413,15 @@ struct FavoritesTimelineView: View {
                     .mask(Rectangle().stroke(style: StrokeStyle(lineWidth: 0.5, dash: [2])))
             )
     }
+
+    // MARK: - Date & Logic
     
-    // MARK: - Computed Properties
     private var monthStart: Date {
         Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: currentDate))!
     }
     
-    private var monthEnd: Date {
-        Calendar.current.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart)!
+    private var nextMonthStart: Date {
+        Calendar.current.date(byAdding: .month, value: 1, to: monthStart)!
     }
     
     private var monthYearString: String {
@@ -313,21 +432,27 @@ struct FavoritesTimelineView: View {
     
     private var favoritesThisMonth: [HabitCompletion] {
         allFavorites.filter {
-            $0.completedAt >= monthStart && $0.completedAt <= monthEnd
+            $0.completedAt >= monthStart && $0.completedAt < nextMonthStart
         }
     }
     
     private var filteredFavorites: [HabitCompletion] {
+        var filtered = favoritesThisMonth
+        
         if let category = selectedCategory {
-            return favoritesThisMonth.filter { completion in
-                if let habitName = completion.reflection?.habitName,
-                   let habit = allHabits.first(where: { $0.name == habitName }) {
-                    return habit.category == category
-                }
-                return false
+            filtered = filtered.filter { completion in
+                guard let name = completion.reflection?.habitName else { return false }
+                return habitMap[name]?.category == category
             }
         }
-        return favoritesThisMonth
+        
+        if showPhotosOnly {
+            filtered = filtered.filter { completion in
+                !(completion.reflection?.photosData.isEmpty ?? true)
+            }
+        }
+        
+        return filtered
     }
     
     private var groupedFilteredFavorites: [Int: [HabitCompletion]] {
@@ -337,30 +462,29 @@ struct FavoritesTimelineView: View {
     }
     
     private var sortedWeeks: [Int] {
-        groupedFilteredFavorites.keys.sorted()
+        groupedFilteredFavorites.keys.sorted(by: >)
     }
     
     private var availableCategories: [String] {
         let categories = Set(favoritesThisMonth.compactMap { completion -> String? in
-            if let habitName = completion.reflection?.habitName,
-               let habit = allHabits.first(where: { $0.name == habitName }) {
-                return habit.category
-            }
-            return nil
+            guard let name = completion.reflection?.habitName else { return nil }
+            return habitMap[name]?.category
         })
         return Array(categories).sorted()
     }
     
-    private func weekTitle(for week: Int) -> String {
+    private func weekTitle(for date: Date) -> String {
         let calendar = Calendar.current
-        guard let weekStart = calendar.date(from: DateComponents(weekOfYear: week, yearForWeekOfYear: calendar.component(.year, from: currentDate))),
-              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
-            return "Week \(week)"
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: date) else {
+            return "Week of \(shortDate(date))"
         }
+        
+        let weekStart = weekInterval.start
+        let weekEnd = weekInterval.end.addingTimeInterval(-1)
         
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-        return "Week \(week) · \(formatter.string(from: weekStart)) – \(formatter.string(from: weekEnd))"
+        return "Week \(calendar.component(.weekOfYear, from: weekStart)) · \(formatter.string(from: weekStart)) – \(formatter.string(from: weekEnd))"
     }
     
     private func shortDate(_ date: Date) -> String {

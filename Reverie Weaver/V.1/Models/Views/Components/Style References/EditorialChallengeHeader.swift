@@ -5,10 +5,6 @@
 
 import SwiftUI
 
-// ================================================================
-// OPEN EDITORIAL SECTION – INK-NEWSPAPER STYLE
-// ================================================================
-
 struct OpenEditorialSection: View {
     let icon: String
     let iconColor: Color
@@ -17,23 +13,18 @@ struct OpenEditorialSection: View {
     
     @Environment(\.colorScheme) private var colorScheme
     
-    // Slightly lighter neutral ink tone for body text
-    private var inkColor: Color {
-        Color(.sRGB, white: colorScheme == .dark ? 0.9 : 0.2, opacity: 1.0)
-    }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             
             // MARK: - Divider + Icon
             HStack(spacing: 0) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(inkColor)
+                    .font(.system(size: 13, weight: .medium))
+                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                     .frame(width: 32, height: 32)
                 
                 Rectangle()
-                    .fill(inkColor.opacity(0.3))
+                    .fill(Color.dynamicSecondaryLabel.opacity(0.3))
                     .frame(height: 1)
             }
             .padding(.bottom, 5)
@@ -42,7 +33,7 @@ struct OpenEditorialSection: View {
             Text(title)
                 .font(.custom("Georgia", size: 14))
                 .fontWeight(.semibold)
-                .foregroundStyle(inkColor)
+                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
                 .tracking(0.5)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, 5)
@@ -55,8 +46,8 @@ struct OpenEditorialSection: View {
             
             // MARK: - Content
             Text(content)
-                .font(.custom("Georgia", size: 12))
-                .foregroundStyle(inkColor.opacity(0.9))
+                .font(.custom("Georgia", size: 13))
+                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 .tracking(0.2)
                 .lineSpacing(5)
                 .multilineTextAlignment(.center)
@@ -71,10 +62,6 @@ struct OpenEditorialSection: View {
         }
     }
 }
-
-// ================================================================
-// PREVIEW (Light Mode)
-// ================================================================
 
 #Preview("Light Mode") {
     ZStack {

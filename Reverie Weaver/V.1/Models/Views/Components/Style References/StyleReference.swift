@@ -5,56 +5,43 @@
 //  Created by Antheia Li on 10/22/25.
 //
 
-
-// ================================================================
-// REVERIE WEAVER - VISUAL STYLING REFERENCE
-// ================================================================
-// All colors, sizes, and styling values in one place
-// ================================================================
-
-import SwiftUI
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MARK: - CARD STYLING
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//
-// TimeAdaptiveCardStyle.swift
-// Reverie Weaver
-//
-// Add this to your project alongside TimeOfDay.swift
-// This extends your existing card styling to be time-adaptive
-//
-
 import SwiftUI
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MARK: - TIME-ADAPTIVE CARD STYLING
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// This replaces your existing reverieCardStyle function in StyleReference.swift
-// Uses TimeOfDay from TimeOfDay.swift (no conflicts!)
+
+// In StyleReference.swift - Update reverieCardStyle
 
 extension View {
-    /// Applies the unified Reverie Archive card styling with time-of-day adaptation
-    /// Used for quoteCard, intentionCard, microHabitsSection, etc.
     func reverieCardStyle(
         colorScheme: ColorScheme,
         cornerRadius: CGFloat = 16,
-        shadowRadius: CGFloat? = nil,        // nil = auto-adapt
-        shadowYOffset: CGFloat? = nil,       // nil = auto-adapt
-        strokeWidth: CGFloat? = nil,         // nil = auto-adapt
-        borderOpacity: CGFloat? = nil,       // nil = auto-adapt
-        backgroundOpacity: CGFloat? = nil    // nil = auto-adapt
+        shadowRadius: CGFloat? = nil,
+        shadowYOffset: CGFloat? = nil,
+        strokeWidth: CGFloat? = nil,
+        borderOpacity: CGFloat? = nil,
+        backgroundOpacity: CGFloat? = nil
     ) -> some View {
         let hour = Calendar.current.component(.hour, from: Date())
-        let period = TimeOfDay(hour: hour)  // Uses your existing TimeOfDay from TimeOfDay.swift
+        let period = TimeOfDay(hour: hour)
+        
+        // Determine the "Effective" Color Scheme
+        let isVisuallyDark = (period == .deepNight || period == .evening || period == .dusk)
+        let effectiveScheme: ColorScheme = (colorScheme == .dark || isVisuallyDark) ? .dark : .light
+        
+        // Detect light backgrounds that need more visible borders
+        let isLightBackground = (period == .dawn || period == .earlyMorning ||
+                                 period == .lateMorning || period == .earlyAfternoon ||
+                                 period == .lateAfternoon)
+        
         let config = CardStyleConfiguration(period: period, colorScheme: colorScheme)
 
         return self
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(
-                        Color.adaptiveSectionBackground(colorScheme: colorScheme)
+                        Color.adaptiveSectionBackground(colorScheme: effectiveScheme)
                             .opacity(backgroundOpacity ?? config.backgroundOpacity)
                     )
                     .shadow(
@@ -63,11 +50,27 @@ extension View {
                         y: shadowYOffset ?? config.shadowYOffset
                     )
             )
+            // Subtle border glow for dark/dusk periods
+            .overlay(
+                Group {
+                    if isVisuallyDark {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .strokeBorder(
+                                Color.white.opacity(0.18),
+                                lineWidth: 0.28
+                            )
+                            .shadow(color: Color.white.opacity(0.16), radius: 6, x: 0, y: 0)
+                    }
+                }
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .strokeBorder(
-                        Color.adaptiveBorder(colorScheme: colorScheme)
-                            .opacity(borderOpacity ?? config.borderOpacity),
+                        // Enhanced border for light backgrounds
+                        isLightBackground
+                            ? Color.black.opacity(0.068)  // More visible gray border
+                            : Color.adaptiveBorder(colorScheme: effectiveScheme)
+                                .opacity(borderOpacity ?? config.borderOpacity),
                         lineWidth: strokeWidth ?? config.strokeWidth
                     )
             )
@@ -77,8 +80,6 @@ extension View {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MARK: - CARD CONFIGURATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Private struct - won't conflict with anything
-
 private struct CardStyleConfiguration {
     let backgroundOpacity: CGFloat
     let shadowColor: Color
@@ -88,20 +89,28 @@ private struct CardStyleConfiguration {
     let borderOpacity: CGFloat
 
     init(period: TimeOfDay, colorScheme: ColorScheme) {
-        if colorScheme == .dark {
-            // Dark mode: consistent, sophisticated styling
-            self.backgroundOpacity = 0.25
-            self.shadowColor = Color.black.opacity(0.3)
-            self.shadowRadius = 6
-            self.shadowYOffset = 2
-            self.strokeWidth = 0.6
-            self.borderOpacity = 0.45
+        // 1. Identify times that have dark backgrounds (Night/Evening/Dusk)
+        // We force the dark card style during these times so we don't get
+        // dark borders on dark backgrounds.
+        let isVisuallyDark = (period == .deepNight || period == .evening || period == .dusk)
+        
+        // 2. Use Dark Theme if System is Dark OR if it's visually Night time
+        let useDarkTheme = colorScheme == .dark || isVisuallyDark
+
+        if useDarkTheme {
+            // MARK: Dark Theme / Night Time Styling
+            // Glassy, lighter opacity to pop against dark backgrounds
+            self.backgroundOpacity = 0.36        // High visibility glass
+            self.shadowColor = Color(hex: "0F0D0B").opacity(0.4)
+            self.shadowRadius = 10
+            self.shadowYOffset = 4
+            self.strokeWidth = 0.8
+            self.borderOpacity = 0.55
         } else {
-            // Light mode: time-adaptive styling for natural feel
+            // MARK: Light Mode (Daytime) Styling
             switch period {
-            case .deepNight, .evening:
-                // Night: Soft, dreamy cards with ethereal shadows
-                self.backgroundOpacity = 0.35
+            case .deepNight, .evening, .dusk:
+                self.backgroundOpacity = 0.38
                 self.shadowColor = Color.black.opacity(0.18)
                 self.shadowRadius = 8
                 self.shadowYOffset = 3
@@ -109,122 +118,42 @@ private struct CardStyleConfiguration {
                 self.borderOpacity = 0.38
 
             case .dawn:
-                // Dawn: Gentle awakening, subtle emergence
                 self.backgroundOpacity = 0.32
-                self.shadowColor = Color.black.opacity(0.14)
+                self.shadowColor = Color.black.opacity(0.16)
                 self.shadowRadius = 7
                 self.shadowYOffset = 2.5
                 self.strokeWidth = 0.55
                 self.borderOpacity = 0.42
 
             case .earlyMorning, .lateMorning:
-                // Morning: Crisp, clear, well-defined cards
-                self.backgroundOpacity = 0.28
-                self.shadowColor = Color.black.opacity(0.10)
+                self.backgroundOpacity = 0.38
+                self.shadowColor = Color.black.opacity(0.18)
                 self.shadowRadius = 5
                 self.shadowYOffset = 2
                 self.strokeWidth = 0.6
                 self.borderOpacity = 0.48
 
             case .earlyAfternoon, .lateAfternoon:
-                // Afternoon: Bright, sharp definition
-                self.backgroundOpacity = 0.25
-                self.shadowColor = Color.black.opacity(0.08)
+                self.backgroundOpacity = 0.38
+                self.shadowColor = Color.black.opacity(0.16)
                 self.shadowRadius = 4
                 self.shadowYOffset = 1.5
                 self.strokeWidth = 0.65
                 self.borderOpacity = 0.52
 
             case .goldenHour:
-                // Golden hour: Warm, glowing, elevated feel
-                self.backgroundOpacity = 0.33
-                self.shadowColor = Color.orange.opacity(0.16)  // 🌆 Warm glow!
+                self.backgroundOpacity = 0.38
+                self.shadowColor = Color.orange.opacity(0.16)
                 self.shadowRadius = 7
                 self.shadowYOffset = 3
                 self.strokeWidth = 0.7
                 self.borderOpacity = 0.50
-
-            case .dusk:
-                // Dusk: Dramatic, floating with twilight magic
-                self.backgroundOpacity = 0.38
-                self.shadowColor = Color.purple.opacity(0.22)  // 🌃 Twilight magic!
-                self.shadowRadius = 10
-                self.shadowYOffset = 4
-                self.strokeWidth = 0.75
-                self.borderOpacity = 0.58
             }
         }
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MARK: - INTEGRATION GUIDE
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 /*
-
- ═══════════════════════════════════════════════════════════════
- HOW TO ADD THIS TO YOUR PROJECT
- ═══════════════════════════════════════════════════════════════
-
- ✅ Step 1: Keep your existing TimeOfDay.swift file
- ───────────────────────────────────────────────────────────────
- Don't change anything in TimeOfDay.swift - it stays as-is!
-
-
- ✅ Step 2: Add this file to your project
- ───────────────────────────────────────────────────────────────
- • Create new file: TimeAdaptiveCardStyle.swift
- • Copy this entire file
- • Add to Xcode project
-
-
- ✅ Step 3: Update StyleReference.swift
- ───────────────────────────────────────────────────────────────
-
- FIND in StyleReference.swift (lines 22-47):
-
-     func reverieCardStyle(
-         colorScheme: ColorScheme,
-         cornerRadius: CGFloat = 16,
-         shadowRadius: CGFloat = 6,
-         shadowYOffset: CGFloat = 2,
-         strokeWidth: CGFloat = 0.6,
-         borderOpacity: CGFloat = 0.45
-     ) -> some View {
-         self
-             .background(...)
-             .overlay(...)
-     }
-
- REPLACE WITH:
-
-     // Time-adaptive card styling moved to TimeAdaptiveCardStyle.swift
-     // This function is now defined there with automatic time adaptation
-
- OR simply DELETE the old reverieCardStyle function entirely.
- The new one from this file will be used automatically!
-
-
- ✅ Step 4: Done!
- ───────────────────────────────────────────────────────────────
- All your existing .reverieCardStyle() calls will now be time-adaptive!
-
-
- ═══════════════════════════════════════════════════════════════
- NO CONFLICTS
- ═══════════════════════════════════════════════════════════════
-
- ✓ TimeOfDay.swift        - Your existing text time adaptation
- ✓ TimeAdaptiveCardStyle.swift - This file (card time adaptation)
- ✓ StyleReference.swift   - Keep everything except old reverieCardStyle
-
- They work together perfectly:
- • TimeOfDay.swift handles TEXT styling by time
- • This file handles CARD styling by time
- • Both use the same TimeOfDay enum (no duplication!)
-
-
  ═══════════════════════════════════════════════════════════════
  USAGE EXAMPLES
  ═══════════════════════════════════════════════════════════════
@@ -244,11 +173,6 @@ private struct CardStyleConfiguration {
      colorScheme: colorScheme,
      shadowRadius: 12  // Custom, rest adapts
  )
-
-
- ═══════════════════════════════════════════════════════════════
- WHAT CHANGES THROUGHOUT THE DAY
- ═══════════════════════════════════════════════════════════════
 
  🌅 Dawn (5-7 AM)
     Cards: Gentle, awakening
@@ -357,44 +281,10 @@ private struct TestCardView: View {
 #endif
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// MARK: - Example Preview
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-/*
- struct ProfileView: View {
-     @Environment(\.colorScheme) private var colorScheme
-
-     var body: some View {
-         VStack(spacing: 16) {
-             Text("Profile")
-                 .adaptivePrimaryText(colorScheme: colorScheme)
-             Text("Language")
-                 .adaptiveSecondaryText(colorScheme: colorScheme)
-             Text("Auto-backup enabled")
-                 .adaptiveReadableText(colorScheme: colorScheme)
-         }
-         .padding()
-         .reverieCardStyle(colorScheme: colorScheme)
-     }
- }
-
- #Preview {
-     ReverieWeaverBackground()
-         .overlay(ProfileView().padding())
- }
-
- Text("Ethereal Journal") For views with heavy gradients, add this helper:
-     .adaptiveReadableText(colorScheme: colorScheme)
-     .readableTintOverlay(colorScheme: colorScheme)
-
- */
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // MARK: - TEXT STYLES (Simplified Adaptive Versions)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 extension View {
-    /// Adaptive primary text — for titles and key labels.
-    /// Adds subtle dynamic contrast and optional glow for dark surfaces.
     func adaptivePrimaryText(
         colorScheme: ColorScheme,
         contrastBoost: Double = 0.05,
@@ -415,8 +305,6 @@ extension View {
             )
     }
 
-    /// Adaptive secondary text — for subtitles, hints, or small UI labels.
-    /// Slightly softer tone with dynamic contrast.
     func adaptiveSecondaryText(
         colorScheme: ColorScheme,
         opacity: Double = 0.85
@@ -428,8 +316,6 @@ extension View {
         return self.foregroundStyle(textColor)
     }
 
-    /// Adaptive readable text for glass or semi-transparent surfaces.
-    /// Keeps readability high without flattening against background.
     func adaptiveReadableText(
         colorScheme: ColorScheme,
         base: Color = .dynamicSecondaryLabel,
@@ -452,7 +338,6 @@ extension View {
 }
 
 extension View {
-    /// Adds a very soft background tint behind text for extreme contrasts.
     func readableTintOverlay(colorScheme: ColorScheme) -> some View {
         self.background(
             RoundedRectangle(cornerRadius: 4)
@@ -467,7 +352,6 @@ extension View {
 }
 
 extension View {
-    /// Used for brand or title text that needs color contrast pop.
     func reverieAccentText(colorScheme: ColorScheme) -> some View {
         self.foregroundStyle(
             LinearGradient(
@@ -565,25 +449,25 @@ struct ReverieTypography {
     static let sectionHeader = (size: 13.0, weight: Font.Weight.semibold)
 
     // Card Titles
-    static let cardTitle = (size: 12.0, weight: Font.Weight.medium)
+    static let cardTitle = (size: 13.0, weight: Font.Weight.medium)
 
     // Body Text
-    static let bodyText = (size: 10.0, weight: Font.Weight.regular)
+    static let bodyText = (size: 12.0, weight: Font.Weight.regular)
 
     // Small Text
-    static let smallText = (size: 10.0, weight: Font.Weight.regular)
+    static let smallText = (size: 11.0, weight: Font.Weight.regular)
 
     // Caption
-    static let caption = (size: 10.0, weight: Font.Weight.regular)
+    static let caption = (size: 12.0, weight: Font.Weight.regular)
 
     // Tiny Text
-    static let tinyText = (size: 10.0, weight: Font.Weight.medium)
+    static let tinyText = (size: 11.0, weight: Font.Weight.medium)
 
     // Badge Text
-    static let badgeText = (size: 10.0, weight: Font.Weight.medium)
+    static let badgeText = (size: 11.0, weight: Font.Weight.medium)
 
     // Icon Sizes
-    static let iconSmall = 10.0
+    static let iconSmall = 11.0
     static let iconMedium = 14.0
     static let iconLarge = 18.0
     static let iconXLarge = 24.0
@@ -671,8 +555,8 @@ struct ReverieShadows {
 struct ReverieAnimations {
 
     // Completion Message
-    static let completionDisplayDuration = 1.5     // Quick Actions
-    static let habitCompletionDuration = 2.0       // Daily Habits
+    static let completionDisplayDuration = 1.5
+    static let habitCompletionDuration = 2.0
 
     // Spring Animation
     static let springResponse = 0.4
@@ -759,7 +643,7 @@ struct ReverieOpacity {
     // Borders
     static let darkBorder: Double = 0.12
     static let lightBorder: Double = 0.08
-    static let nestedBorder: Double = 0.5  // Multiplier
+    static let nestedBorder: Double = 0.5
 
     // Category Badges
     static let darkBadge: Double = 0.08
@@ -789,15 +673,32 @@ struct ReverieHaptics {
         impact.impactOccurred()
     }
 
+    static func mediumFeedback() {
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+    }
+
     static func successFeedback() {
         let notification = UINotificationFeedbackGenerator()
         notification.notificationOccurred(.success)
     }
+    
+    static func errorFeedback() {
+        let notification = UINotificationFeedbackGenerator()
+        notification.notificationOccurred(.error)
+    }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STYLE GUIDE SUMMARY
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
 
 /*
 
@@ -832,51 +733,5 @@ struct ReverieHaptics {
    - Premium journal feel
    - Organic paper textures
    - Warm, inviting gradients
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📐 LAYOUT STRUCTURE
-===================
-
-Page Structure:
-├── Horizontal Padding: 20pt
-├── Top Padding: 20pt
-├── Bottom Padding: 40pt
-└── Section Spacing: 24pt
-
-Card Structure:
-├── Corner Radius: 20pt
-├── Padding: 20pt
-├── Shadow: Adaptive (dark/light)
-└── Border: Adaptive (0.12/0.08 opacity)
-
-Nested Elements:
-├── Corner Radius: 14pt
-├── Padding: 14pt
-├── Border: 0.5 line width
-└── Opacity: Lower than parent
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🎭 DARK VS LIGHT MODE
-======================
-
-Dark Mode:
-├── Background: Deep purple-black gradient
-├── Sections: White 4% opacity
-├── Borders: White 12% opacity
-├── Shadows: Black 30%, radius 8, y: 4
-├── Grain: 15% opacity
-└── Text: System adaptive colors
-
-Light Mode:
-├── Background: Time-based gradients
-├── Sections: Black 2% opacity
-├── Borders: Black 8% opacity
-├── Shadows: Black 4%, radius 12, y: 6
-├── Grain: 8% opacity
-└── Text: System adaptive colors
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 */

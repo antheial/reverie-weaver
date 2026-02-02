@@ -2,9 +2,6 @@
 // MiniChallengeDetailView.swift
 // Reverie Weaver
 //
-// Individual challenge deep-dive page
-// Shows philosophy, 3 habits, ADHD features, tips, progression
-// ✅ SIMPLIFIED with overview-based progress tracking
 //
 
 import SwiftUI
@@ -20,47 +17,56 @@ struct MiniChallengeDetailView: View {
     
     @Query private var habits: [Habit]
     @Query private var completions: [HabitCompletion]
-    @StateObject private var progressManager = Project50ProgressManager.shared
+    @Query private var reflections: [DailyReflection]
+
+    private var progressManager = Project50ProgressManager.shared
     
     let challenge: MiniChallenge
+    
+    init(challenge: MiniChallenge) {
+        self.challenge = challenge
+    }
+    
     @State private var addedToDesk = false
     @State private var showCompletionModal = false
+    @State private var showError = false
+    @State private var errorMessage = ""
     
-    // ✅ FIXED: Match by tag instead of UUID
+    // Match by tag instead of UUID
     private var activeProgress: MiniChallengeProgress? {
-            allProgress.first { progress in
-                progress.challengeTag == challenge.tag && !progress.isCompleted
-            }
+        allProgress.first { progress in
+            progress.challengeTag == challenge.tag && !progress.isCompleted
         }
+    }
     
     // Check if challenge habits are in Desk
     private var isAlreadyActive: Bool {
-           habits.contains { habit in
-               habit.programTag == "C7-\(challenge.tag)"
-           }
-       }
+        habits.contains { habit in
+            habit.programTag == "C7-\(challenge.tag)"
+        }
+    }
     
     private var challengeHabits: [Habit] {
-           habits.filter { $0.programTag == "C7-\(challenge.tag)" }
-       }
+        habits.filter { $0.programTag == "C7-\(challenge.tag)" }
+    }
     
     // Check if all challenge habits completed today
     private var allHabitsCompletedToday: Bool {
-           guard !challengeHabits.isEmpty else { return false }
-           
-           let today = Date()
-           let todayCompletions = completions.filter { completion in
-               Calendar.current.isDate(completion.completedAt, inSameDayAs: today)
-           }
-           
-           return challengeHabits.allSatisfy { habit in
-               todayCompletions.contains { $0.habitId == habit.id }
-           }
-       }
+        guard !challengeHabits.isEmpty else { return false }
+        
+        let today = Date()
+        let todayCompletions = completions.filter { completion in
+            Calendar.current.isDate(completion.completedAt, inSameDayAs: today)
+        }
+        
+        return challengeHabits.allSatisfy { habit in
+            todayCompletions.contains { $0.habitId == habit.id }
+        }
+    }
     
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 ReverieWeaverBackground()
                 
                 ScrollView(showsIndicators: false) {
@@ -68,21 +74,26 @@ struct MiniChallengeDetailView: View {
                         heroSection
                         
                         // Show progress if active
-                        // Show progress only if active AND habits still exist
                         if let progress = activeProgress,
                            habits.contains(where: { $0.programTag == "C7-\(challenge.tag)" }) {
                             progressSection(progress)
                         }
                         
                         habitsSection
-                        adhdFeaturesSection
-                        tipsSection
-                        howToProgressSection
                     }
                     .padding(.bottom, 120)
+                    .padding(.top, 60)
                 }
+                
+                // Floating Close Button (Top Right)
+                HStack {
+                    Spacer()
+                    closeButton
+                }
+                .padding(.horizontal)
+                .padding(.top, 10)
             }
-            .toolbar { closeButton }
+            .toolbar(.hidden, for: .navigationBar)
             .overlay(alignment: .bottomTrailing) {
                 if !isAlreadyActive {
                     startChallengeButton
@@ -92,20 +103,20 @@ struct MiniChallengeDetailView: View {
             .sheet(isPresented: $showCompletionModal) {
                 ThreadCompleteModal(
                     challenge: challenge,
-                    onFinish: {
-                        finishChallenge()
-                    },
-                    onRestart: {
-                        restartChallenge()
-                    }
+                    onFinish: { finishChallenge() },
+                    onRestart: { restartChallenge() }
                 )
             }
             .onChange(of: allHabitsCompletedToday) { oldValue, newValue in
                 if newValue && !oldValue {
-                    // All habits just completed - update progress
                     updateDailyProgress()
                 }
             }
+        }
+        .alert("Error", isPresented: $showError) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage)
         }
     }
 }
@@ -113,97 +124,48 @@ struct MiniChallengeDetailView: View {
 // MARK: - View Sections
 
 private extension MiniChallengeDetailView {
-    
-    // MARK: Hero Section
+
+    // MARK: - Hero Section
     var heroSection: some View {
-        VStack(spacing: 20) {
-            ZStack {
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color(hex: challenge.colorHex).opacity(0.3),
-                                Color(hex: challenge.colorHex).opacity(0.1),
-                                Color.clear
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 120
-                        )
-                    )
-                    .frame(width: 80, height: 80)
-                    .blur(radius: 14)
-                
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color.white.opacity(0.6),
-                                Color(hex: challenge.colorHex).opacity(0.4),
-                                Color(hex: challenge.colorHex).opacity(0.2)
-                            ],
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 80
-                        )
-                    )
-                    .frame(width: 100, height: 100)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.5),
-                                        Color(hex: challenge.colorHex).opacity(0.4)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 2
-                            )
-                    )
-                    .shadow(color: Color(hex: challenge.colorHex).opacity(0.4), radius: 20, y: 8)
-                
-                Image(systemName: challenge.icon)
-                    .font(.system(size: 46, weight: .semibold))
-                    .foregroundStyle(Color(hex: challenge.colorHex))
-            }
+        VStack(spacing: 16) {
+            ReverieEditorialHero(
+                icon: challenge.icon,
+                title: challenge.title,
+                tagline: challenge.tagline,
+                description: challenge.description,
+                accentColorHex: challenge.colorHex,
+                tier: challenge.tier
+            )
             
-            VStack(spacing: 8) {
-                Text(challenge.title)
-                    .font(.system(size: 23, weight: .bold))
-                    .fontDesign(.serif)
-                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
-                
-                Text("7-DAY CHALLENGE")
-                    .font(.system(size: 10, weight: .bold))
-                    .tracking(1)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(Color(hex: challenge.colorHex))
-                            .shadow(color: Color(hex: challenge.colorHex).opacity(0.4), radius: 8, y: 2)
-                    )
-                
-                VStack(spacing: 8) {
-                    Text(challenge.tagline)
-                        .font(.system(size: 13, weight: .medium))
+            // Identity Statement
+            if !challenge.identityStatement.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color(hex: challenge.colorHex))
+                        Text("YOUR JOURNEY")
+                            .font(.system(size: 12, weight: .semibold))
+                            .tracking(1)
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                    }
+                    
+                    Text(challenge.identityStatement)
+                        .font(.system(size: 13, weight: .regular))
+                        .fontDesign(.serif)
                         .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
-                    Text(challenge.description)
-                        .font(.system(size: 11, weight: .regular))
-                        .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                        .lineSpacing(4)
+                        .multilineTextAlignment(.center)
                 }
-                .padding(.top, 10)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .reverieCardStyle(colorScheme: colorScheme)
             }
         }
-        .padding(.top, 20)
+        .padding(.horizontal, 24)
     }
-    
-    // MARK: ✅ Progress Section (shows when active)
+
+    // MARK: - Progress Section
     @ViewBuilder
     func progressSection(_ progress: MiniChallengeProgress) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -213,16 +175,16 @@ private extension MiniChallengeDetailView {
                     .font(.system(size: 14))
                     .foregroundStyle(Color(hex: challenge.colorHex))
                 Text("YOUR PROGRESS")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .tracking(1)
                     .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 Spacer()
                 Text("\(progress.daysCompleted)/7")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.sageGreen)
             }
             
-            // Day circles (1-7) - smaller 24px
+            // Day circles (1-7)
             HStack(spacing: 6) {
                 ForEach(1...7, id: \.self) { day in
                     ZStack {
@@ -233,11 +195,11 @@ private extension MiniChallengeDetailView {
                         
                         if day <= progress.daysCompleted {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(.white)
                         } else {
                             Text("\(day)")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(Color.dynamicSecondaryLabel)
                         }
                     }
@@ -265,63 +227,131 @@ private extension MiniChallengeDetailView {
             }
             .frame(height: 6)
             
-            // Status messages
-            if progress.daysCompleted >= 7 {
+            // Status messages (using rest-day-aware expiration check)
+            if progress.isArchived {
+                // Challenge archived as partial success
+                VStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.sageGreen.opacity(0.8))
+                        Text("Challenge archived with \(Int(progress.successRate * 100))% completion!")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.sageGreen.opacity(0.9))
+                    }
+
+                    Text("View your achievement in the Monthly Archive")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.7))
+                }
+            } else if progress.shouldShowRestart(reflections: reflections) {
+                // Challenge expired with <85.7% - show restart option
+                VStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.terracottaRose)
+                        Text("Challenge expired (\(progress.daysCompleted)/7 days). Try again?")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.terracottaRose)
+                    }
+
+                    Button {
+                        restartChallenge()
+                    } label: {
+                        Text("Restart Challenge")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: challenge.colorHex))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(hex: challenge.colorHex).opacity(0.15))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .strokeBorder(Color(hex: challenge.colorHex).opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else if progress.shouldArchive(reflections: reflections) {
+                // Challenge should be archived (≥85.7% success) - auto-archive on appear
+                VStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(Color.sageGreen.opacity(0.8))
+                        Text("Great effort! \(progress.daysCompleted)/7 days completed.")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.sageGreen.opacity(0.9))
+                    }
+
+                    Text("Archiving your achievement...")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.7))
+                }
+                .onAppear {
+                    archiveChallengeAsPartialSuccess()
+                }
+            } else if progress.daysCompleted >= 7 {
                 VStack(spacing: 12) {
                     HStack(spacing: 6) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 14))
                             .foregroundStyle(Color.sageGreen)
-                        Text("Challenge Complete!")
-                            .font(.system(size: 14, weight: .semibold))
+                        Text("Challenge complete! Celebrate your growth.")
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.sageGreen)
                     }
-                    
-                    Text("You completed all habits for 7 days. Amazing work!")
-                        .font(.system(size: 12))
-                        .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                     
                     Button {
                         showCompletionModal = true
                     } label: {
-                        Text("Finish Challenge")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.white)
+                        Text("View Completion")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.sageGreen)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.sageGreen)
-                            .cornerRadius(12)
-                            .shadow(color: Color.shadowColor.opacity(0.2), radius: 4, y: 2)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.sageGreen.opacity(0.15))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .strokeBorder(Color.sageGreen.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
                     }
+                    .buttonStyle(.plain)
                 }
             } else if progress.isTodayComplete {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.sageGreen)
                     Text("Today's habits completed! Keep going tomorrow.")
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 }
             } else {
                 HStack(spacing: 6) {
                     Image(systemName: "circle")
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.5))
-                    Text("Complete all \(challenge.habits.count) habits today to mark Day \(progress.daysCompleted + 1)")
-                        .font(.system(size: 12))
+                    Text("Complete all \(challenge.habits.filter { !$0.isOptionalForCompletion }.count) habits today to mark Day \(progress.daysCompleted + 1)")
+                        .font(.system(size: 13))
                         .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 }
             }
             
-            // Time remaining hint
-            if progress.isWithinTimeframe && progress.daysCompleted < 7 {
+            // Time remaining hint (using rest-day-aware methods)
+            if !progress.isExpired(reflections: reflections) && !progress.isArchived && progress.isWithinTimeframe(reflections: reflections) && progress.daysCompleted < 7 {
                 HStack(spacing: 6) {
                     Image(systemName: "clock")
-                        .font(.system(size: 10))
+                        .font(.system(size: 11))
                         .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.6))
-                    Text("Day \(progress.daysSinceStart + 1) of your journey (10-day window)")
-                        .font(.system(size: 10))
+                    Text("Day \(progress.daysSinceStart + 1) of your journey (8-day window)")
+                        .font(.system(size: 11))
                         .foregroundStyle(Color.dynamicSecondaryLabel.opacity(0.7))
                 }
             }
@@ -330,7 +360,6 @@ private extension MiniChallengeDetailView {
         .reverieCardStyle(colorScheme: colorScheme)
         .padding(.horizontal, 24)
         
-        // 🗑 Add delete button below the progress card
         deleteChallengeButton
     }
     
@@ -344,7 +373,7 @@ private extension MiniChallengeDetailView {
                 HStack(spacing: 6) {
                     Image(systemName: "trash")
                     Text("Delete Challenge")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                 }
                 .foregroundStyle(Color.red.opacity(0.85))
                 .frame(maxWidth: .infinity)
@@ -354,186 +383,739 @@ private extension MiniChallengeDetailView {
         }
     }
 
-    // MARK: Habits Section
+    // MARK: - Habits Section
     var habitsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("INCLUDED HABITS")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 12, weight: .semibold))
                 .tracking(1)
                 .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
                 .padding(.horizontal, 24)
-            
+
             VStack(spacing: 12) {
                 ForEach(challenge.habits) { habit in
-                    ChallengeHabitCard(habit: habit, colorScheme: colorScheme)
-                        .padding(.horizontal, 24)
+                    ChallengeHabitCardWithDetail(
+                        habit: habit,
+                        challenge: challenge,
+                        colorScheme: colorScheme
+                    )
+                    .padding(.horizontal, 24)
                 }
             }
         }
     }
-    
-    // MARK: ADHD Features Section
-    var adhdFeaturesSection: some View {
-        SectionCard(
-            icon: "checkmark.seal.fill",
-            iconColor: Color(hex: challenge.colorHex),
-            title: "ADHD-Friendly Features",
-            content: nil,
-            rows: challenge.adhdFeatures.map { ("checkmark.circle", $0) }
-        )
-    }
-    
-    // MARK: Tips Section
-    var tipsSection: some View {
-        SectionCard(
-            icon: "lightbulb.fill",
-            iconColor: Color(hex: challenge.colorHex),
-            title: "Tips for Success",
-            content: nil,
-            rows: challenge.tips.map { ("sparkles", $0) }
-        )
-    }
-    
-    // MARK: How to Progress Section (static guide)
-    var howToProgressSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color(hex: challenge.colorHex))
-                Text("HOW TO PROGRESS")
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1)
-                    .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-            }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                progressStep(
-                    number: 1,
-                    text: "Complete all \(challenge.habits.count) habits in one day"
-                )
-                progressStep(
-                    number: 2,
-                    text: "Repeat for 7 total days (can be non-consecutive within 10 days)"
-                )
-                progressStep(
-                    number: 3,
-                    text: "Celebrate your growth and renewed momentum!"
-                )
-            }
-            
-            Text(challenge.progressionGuide)
-                .font(.system(size: 11))
-                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                .lineSpacing(3)
-                .padding(.top, 4)
-        }
-        .padding(16)
-        .reverieCardStyle(colorScheme: colorScheme)
-        .padding(.horizontal, 24)
-    }
-    
-    @ViewBuilder
-    func progressStep(number: Int, text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(Color(hex: challenge.colorHex).opacity(0.15))
-                    .frame(width: 24, height: 24)
-                Text("\(number)")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color(hex: challenge.colorHex))
-            }
-            
-            Text(text)
-                .font(.system(size: 12))
-                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                .fixedSize(horizontal: false, vertical: true)
+
+    // MARK: - Close Button
+    var closeButton: some View {
+        GlassCloseButton {
+            dismiss()
         }
     }
-    
-    // MARK: Close Button
-    var closeButton: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button { dismiss() } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.35))
-                        .frame(width: 32, height: 32)
-                        .shadow(color: Color.shadowColor, radius: 4, y: 2)
-                    Circle()
-                        .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-                        .frame(width: 32, height: 32)
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.dynamicSecondaryLabel)
-                }
-            }
-        }
-    }
-    
+
     // MARK: Start Challenge Button
     var startChallengeButton: some View {
         Button {
             addChallengeToDesk()
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 10) {
                 Image(systemName: addedToDesk ? "checkmark.circle.fill" : "play.circle.fill")
                     .font(.system(size: 18))
-                Text(addedToDesk ? "Added to Desk ✓" : "Start 7-Day Challenge")
+                Text(addedToDesk ? "Added!" : "Start 7-Day Challenge")
                     .font(.system(size: 14, weight: .semibold))
-                    .fontDesign(.serif)
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
             .background(
-                LinearGradient(
-                    colors: [Color(hex: challenge.colorHex).opacity(0.9), Color(hex: challenge.colorHex).opacity(0.7)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
+                Capsule()
+                    .fill(addedToDesk ? Color.sageGreen : Color(hex: challenge.colorHex))
+                    .shadow(color: Color.shadowColor.opacity(0.3), radius: 8, y: 4)
             )
-            .clipShape(Capsule())
-            .shadow(color: Color.shadowColor.opacity(0.25), radius: 4, y: 3)
         }
         .buttonStyle(.plain)
-        .padding(.trailing, 24)
-        .padding(.bottom, 32)
         .disabled(addedToDesk)
+        .padding(24)
+    }
+}
+
+// MARK: - Enhanced Challenge Habit Card with Detail Sheet
+
+private struct ChallengeHabitCardWithDetail: View {
+    let habit: Project50Habit
+    let challenge: MiniChallenge
+    let colorScheme: ColorScheme
+    @State private var showingDetail = false
+
+    var body: some View {
+        Button {
+            ReverieHaptics.lightFeedback()
+            showingDetail = true
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: habit.colorHex).opacity(0.15))
+                            .frame(width: 36, height: 36)
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(Color(hex: habit.colorHex).opacity(0.3), lineWidth: 1)
+                            )
+                        Image(systemName: habit.icon)
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color(hex: habit.colorHex))
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text(habit.name)
+                                .font(.system(size: 14, weight: .semibold))
+                                .fontDesign(.serif)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+
+                            // Show "Optional" badge for optional habits
+                            if habit.isOptionalForCompletion {
+                                Text("Optional")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.sageGreen.opacity(0.8))
+                                    )
+                            }
+                        }
+
+                        Text(habit.description.extractBriefDescription())
+                            .font(.system(size: 12))
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                            .lineLimit(2)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .reverieCardStyle(colorScheme: colorScheme)
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showingDetail) {
+            HabitDetailSheet(habit: habit, challenge: challenge, colorScheme: colorScheme)
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
+        }
+    }
+}
+
+// MARK: - Habit Detail Sheet
+
+private struct HabitDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    let habit: Project50Habit
+    let challenge: MiniChallenge
+    let colorScheme: ColorScheme
+
+    @State private var dragOffset: CGFloat = 0
+
+    // Reflection state (for optional habits like Progress Check-In)
+    @State private var showReflectionInput = false
+    @State private var reflectionText = ""
+    @State private var isSaving = false
+
+    // Query for existing reflection
+    @Query private var allReflections: [ReflectionNote]
+
+    private var existingReflection: ReflectionNote? {
+        allReflections.first { $0.challengeTag == challenge.tag }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .top) {
+                ReverieWeaverBackground()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        // Hero
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(hex: habit.colorHex).opacity(0.15))
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Circle()
+                                            .strokeBorder(Color(hex: habit.colorHex).opacity(0.3), lineWidth: 1.5)
+                                    )
+
+                                Image(systemName: habit.icon)
+                                    .font(.system(size: 28))
+                                    .foregroundStyle(Color(hex: habit.colorHex))
+                            }
+
+                            Text(habit.name)
+                                .font(.system(size: 22, weight: .bold))
+                                .fontDesign(.serif)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                                .multilineTextAlignment(.center)
+
+                            // Show "Optional" note for optional habits
+                            if habit.isOptionalForCompletion {
+                                Text("This reflection is optional and won't affect your completion rate")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.sageGreen)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 24)
+                            }
+
+                            Text(habit.description.extractBriefDescription())
+                                .font(.system(size: 12))
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(4)
+                        }
+                        .padding(.top, 20)
+                        .padding(.horizontal, 24)
+
+                        // Detail Sections
+                        VStack(spacing: 16) {
+                            if !habit.description.extractCore().isEmpty {
+                                DetailSection(
+                                    icon: "target",
+                                    title: "What to do",
+                                    content: habit.description.extractCore(),
+                                    accentColor: Color(hex: habit.colorHex),
+                                    colorScheme: colorScheme
+                                )
+                            }
+
+                            if !habit.description.extractAnchor().isEmpty {
+                                DetailSection(
+                                    icon: "clock",
+                                    title: "When to do it",
+                                    content: habit.description.extractAnchor(),
+                                    accentColor: Color(hex: habit.colorHex),
+                                    colorScheme: colorScheme
+                                )
+                            }
+
+                            if !habit.description.extractIfThen().isEmpty {
+                                DetailSection(
+                                    icon: "arrow.right.circle.fill",
+                                    title: "How to remember",
+                                    content: habit.description.extractIfThen(),
+                                    accentColor: Color(hex: habit.colorHex),
+                                    colorScheme: colorScheme
+                                )
+                            }
+
+                            if !habit.description.extractWhy().isEmpty {
+                                DetailSection(
+                                    icon: "lightbulb.fill",
+                                    title: "Why it works",
+                                    content: habit.description.extractWhy(),
+                                    accentColor: Color(hex: habit.colorHex),
+                                    colorScheme: colorScheme
+                                )
+                            }
+                        }
+
+                        // Rescue protocol
+                        if !habit.description.extractRescue().isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "lifepreserver.fill")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(.white)
+
+                                    Text("STRUGGLING? DO THIS INSTEAD")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .fontDesign(.serif)
+                                        .textCase(.uppercase)
+                                        .tracking(0.5)
+                                        .foregroundStyle(.white)
+                                }
+
+                                Text(habit.description.extractRescue())
+                                    .font(.system(size: 12, weight: .regular))
+                                    .fontDesign(.serif)
+                                    .foregroundStyle(.white)
+                                    .lineSpacing(4)
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color.sageGreen, Color.sageGreen.opacity(0.8)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                            )
+                            .padding(.horizontal, 24)
+                        }
+
+                        // MARK: - Reflection Section (for optional Progress Check-In habits)
+                        if habit.isOptionalForCompletion {
+                            reflectionSection
+                        }
+                    }
+                    .padding(.bottom, 40)
+                    .padding(.top, 60)
+                }
+
+                // Floating Close Button (Top Right)
+                HStack {
+                    Spacer()
+                    GlassCloseButton {
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 10)
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+            .gesture(
+                DragGesture()
+                    .onChanged { gesture in
+                        if gesture.translation.height > 0 {
+                            dragOffset = gesture.translation.height
+                        }
+                    }
+                    .onEnded { gesture in
+                        if gesture.translation.height > 100 {
+                            dismiss()
+                        }
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                        }
+                    }
+            )
+            .offset(y: dragOffset)
+            .onAppear {
+                // Load existing reflection if any
+                if let existing = existingReflection {
+                    reflectionText = existing.content
+                }
+            }
+        }
+    }
+
+    // MARK: - Reflection Section
+
+    @ViewBuilder
+    private var reflectionSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack(spacing: 8) {
+                Image(systemName: "pencil.and.outline")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color(hex: habit.colorHex))
+
+                Text("YOUR REFLECTION")
+                    .font(.system(size: 12, weight: .semibold))
+                    .fontDesign(.serif)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+            }
+            .padding(.horizontal, 24)
+
+            // Show existing reflection or input
+            if let existing = existingReflection, !showReflectionInput {
+                // Display existing reflection
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(existing.content)
+                        .font(.system(size: 13, weight: .regular))
+                        .fontDesign(.serif)
+                        .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                        .lineSpacing(4)
+
+                    HStack {
+                        Text("Last updated: \(existing.lastEdited, style: .date) at \(existing.lastEdited, style: .time)")
+                            .font(.system(size: 10))
+                            .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
+
+                        Spacer()
+
+                        Button {
+                            reflectionText = existing.content
+                            withAnimation(.spring(response: 0.3)) {
+                                showReflectionInput = true
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 11))
+                                Text("Edit")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundStyle(Color(hex: habit.colorHex))
+                        }
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .reverieCardStyle(colorScheme: colorScheme)
+                .padding(.horizontal, 24)
+            } else if showReflectionInput {
+                // Reflection input
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Reflect on your progress anytime. Schedule this whenever works for you.")
+                        .font(.system(size: 11))
+                        .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
+
+                    ZStack(alignment: .topLeading) {
+                        if reflectionText.isEmpty {
+                            Text("Write your reflection here...")
+                                .font(.system(size: 13, weight: .regular))
+                                .fontDesign(.serif)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 8)
+                                .allowsHitTesting(false)
+                        }
+
+                        TextEditor(text: $reflectionText)
+                            .font(.system(size: 13, weight: .regular))
+                            .fontDesign(.serif)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 150)
+                    }
+
+                    HStack(spacing: 12) {
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                showReflectionInput = false
+                                if let existing = existingReflection {
+                                    reflectionText = existing.content
+                                } else {
+                                    reflectionText = ""
+                                }
+                            }
+                        } label: {
+                            Text("Cancel")
+                                .font(.system(size: 13, weight: .medium))
+                                .fontDesign(.serif)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .subtle)
+                        }
+
+                        Spacer()
+
+                        Button {
+                            saveReflection()
+                        } label: {
+                            HStack(spacing: 6) {
+                                if isSaving {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 14))
+                                }
+                                Text("Save Reflection")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .fontDesign(.serif)
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                Capsule()
+                                    .fill(reflectionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                          ? Color.gray.opacity(0.5)
+                                          : Color(hex: habit.colorHex))
+                            )
+                        }
+                        .disabled(reflectionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSaving)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .reverieCardStyle(colorScheme: colorScheme)
+                .padding(.horizontal, 24)
+            } else {
+                // No existing reflection - show button to start
+                Button {
+                    withAnimation(.spring(response: 0.3)) {
+                        showReflectionInput = true
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 16))
+
+                        Text("Write Reflection")
+                            .font(.system(size: 14, weight: .semibold))
+                            .fontDesign(.serif)
+                    }
+                    .foregroundStyle(Color(hex: habit.colorHex))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .strokeBorder(Color(hex: habit.colorHex).opacity(0.5), lineWidth: 1.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(hex: habit.colorHex).opacity(0.08))
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: - Save Reflection
+
+    private func saveReflection() {
+        let trimmedContent = reflectionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContent.isEmpty else { return }
+
+        isSaving = true
+
+        // Check if we have an existing reflection to update
+        if let existing = existingReflection {
+            // Update existing
+            existing.content = trimmedContent
+            existing.lastEdited = Date()
+        } else {
+            // Create new reflection
+            let newReflection = ReflectionNote(
+                type: "challenge",
+                label: challenge.title,
+                title: "Challenge Reflection",
+                startDate: Date(),
+                content: trimmedContent,
+                challengeTag: challenge.tag
+            )
+            modelContext.insert(newReflection)
+        }
+
+        do {
+            try modelContext.save()
+            ReverieHaptics.successFeedback()
+
+            withAnimation(.spring(response: 0.3)) {
+                showReflectionInput = false
+            }
+        } catch {
+            print("Failed to save reflection: \(error)")
+        }
+
+        isSaving = false
+    }
+}
+
+// MARK: - Detail Section Component (Visual Update)
+
+private struct DetailSection: View {
+    let icon: String
+    let title: String
+    let content: String
+    let accentColor: Color
+    let colorScheme: ColorScheme
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(accentColor)
+                
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .fontDesign(.serif)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
+            }
+            
+            // Parse string into lists vs. regular text
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(content.components(separatedBy: "\n"), id: \.self) { line in
+                    let trimmed = line.trimmingCharacters(in: .whitespaces)
+                    
+                    if !trimmed.isEmpty {
+                        // Check if line is a list item (handles •, -, – and ·)
+                        if trimmed.hasPrefix("•") || trimmed.hasPrefix("-") || trimmed.hasPrefix("–") || trimmed.hasPrefix("·") {
+                            HStack(alignment: .top, spacing: 8) {
+                                Text("•")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(Color.dynamicSecondaryLabel)
+                                
+                                Text(cleanListItem(trimmed))
+                                    .font(.system(size: 13, weight: .regular))
+                                    .fontDesign(.serif)
+                                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                                    .lineSpacing(4)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(.bottom, 2) // Extra space between list items
+                        } else {
+                            // Standard text paragraph
+                            Text(trimmed)
+                                .font(.system(size: 13, weight: .regular))
+                                .fontDesign(.serif)
+                                .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .reverieCardStyle(colorScheme: colorScheme)
+        .padding(.horizontal, 18)
+    }
+    
+    func cleanListItem(_ str: String) -> String {
+        var clean = str
+        // Clean common bullet characters
+        let prefixes = ["•", "-", "–", "·"]
+        for prefix in prefixes {
+            if clean.hasPrefix(prefix) {
+                clean.removeFirst()
+                break
+            }
+        }
+        return clean.trimmingCharacters(in: .whitespaces)
+    }
+}
+
+// MARK: - Enhanced String Parsing for Complex Content
+
+extension String {
+    // Helper to find content between specific sections markers
+    private func extractSection(startMarkers: [String], stopMarkers: [String]) -> String {
+        let lines = self.split(separator: "\n")
+        var isCapturing = false
+        var content = ""
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            
+            // 1. CHECK STOP MARKERS FIRST
+            // If we hit ANY known stop marker, we stop capturing immediately
+            for stop in stopMarkers {
+                if trimmed.hasPrefix(stop) {
+                    if isCapturing {
+                        return content.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                }
+            }
+            
+            // 2. CHECK START MARKERS
+            if !isCapturing {
+                for start in startMarkers {
+                    if trimmed.hasPrefix(start) {
+                        isCapturing = true
+                        // Remove the marker itself from the first line
+                        // e.g. "• Core: Do x" -> "Do x"
+                        let cleanLine = trimmed.dropFirst(start.count).trimmingCharacters(in: .whitespaces)
+                        if !cleanLine.isEmpty {
+                            content += cleanLine + "\n"
+                        }
+                        break // Found our start, stop checking other start markers
+                    }
+                }
+            } else {
+                // 3. CAPTURE CONTENT
+                // We are inside the section, so add the line
+                // This preserves bullets, hyphens, and newlines inside the section
+                content += trimmed + "\n"
+            }
+        }
+        
+        return content.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    // Known headers mapping (English + Chinese/Custom variants)
+    var coreMarkers: [String] { ["• Core:", "• 核心:"] }
+    var anchorMarkers: [String] { ["• Anchor:", "• Anchor point:", "• 锚点:"] }
+    var ifThenMarkers: [String] { ["• If-then:", "• 如果-那么:", "• If-Then:"] }
+    var whyMarkers: [String] { ["• Why It Works:", "• 原理:", "• Why:"] }
+    var rescueMarkers: [String] { ["• Rescue:", "• 救援:", "• 急救:"] }
+    
+    // Combined list of ALL markers to use as stops
+    var allMarkers: [String] {
+        coreMarkers + anchorMarkers + ifThenMarkers + whyMarkers + rescueMarkers
+    }
+    
+    func extractBriefDescription() -> String {
+        let lines = self.split(separator: "\n")
+        guard let firstLine = lines.first else { return "" }
+        let trimmed = firstLine.trimmingCharacters(in: .whitespaces)
+        
+        // If the very first line matches ANY known marker, there is no brief description
+        for marker in allMarkers {
+            if trimmed.hasPrefix(marker) { return "" }
+        }
+        return trimmed
+    }
+    
+    // Each extractor defines its START markers and uses ALL OTHER markers as STOPS
+    func extractCore() -> String {
+        extractSection(startMarkers: coreMarkers, stopMarkers: anchorMarkers + ifThenMarkers + whyMarkers + rescueMarkers)
+    }
+    
+    func extractAnchor() -> String {
+        extractSection(startMarkers: anchorMarkers, stopMarkers: ifThenMarkers + whyMarkers + rescueMarkers + coreMarkers) // Added coreMarkers just in case order varies
+    }
+    
+    func extractIfThen() -> String {
+        extractSection(startMarkers: ifThenMarkers, stopMarkers: whyMarkers + rescueMarkers + anchorMarkers)
+    }
+    
+    func extractWhy() -> String {
+        extractSection(startMarkers: whyMarkers, stopMarkers: rescueMarkers + ifThenMarkers)
+    }
+    
+    func extractRescue() -> String {
+        extractSection(startMarkers: rescueMarkers, stopMarkers: []) // Usually last, so no stop markers needed (EOF stops it)
     }
 }
 
 // MARK: - Actions
 
 private extension MiniChallengeDetailView {
-    
+
     func addChallengeToDesk() {
         guard !isAlreadyActive else { return }
-        
-        // Sort habits by time-of-day category priority
-        let sortedNewHabits = challenge.habits.sorted {
+
+        // Filter out optional habits - they won't be added to DeskView
+        let requiredHabits = challenge.habits.filter { !$0.isOptionalForCompletion }
+
+        let sortedNewHabits = requiredHabits.sorted {
             categoryTimePriority($0.category) < categoryTimePriority($1.category)
         }
-        
-        // Get existing habits sorted by current order
+
         let existingHabits = habits.sorted { $0.order < $1.order }
-        
-        // Smart insertion: interleave based on category time priority
+
         var currentOrder = 0
         var processedExisting = 0
-        
-        // ✅ CRITICAL: Track IDs of newly created habits
         var newHabitIDs: [UUID] = []
-        
+
         for newHabit in sortedNewHabits {
             let newPriority = categoryTimePriority(newHabit.category)
-            
-            // Insert existing habits that come before this new habit
+
             while processedExisting < existingHabits.count {
                 let existing = existingHabits[processedExisting]
                 let existingPriority = categoryTimePriority(existing.category)
-                
+
                 if existingPriority <= newPriority {
                     existing.order = currentOrder
                     currentOrder += 1
@@ -542,8 +1124,7 @@ private extension MiniChallengeDetailView {
                     break
                 }
             }
-            
-            // Insert the new habit with unique challenge tag
+
             let habit = Habit(
                 name: newHabit.name,
                 description: newHabit.description,
@@ -558,247 +1139,220 @@ private extension MiniChallengeDetailView {
                 programLevel: nil
             )
             modelContext.insert(habit)
-            newHabitIDs.append(habit.id)  // ✅ Track this ID
+            newHabitIDs.append(habit.id)
             currentOrder += 1
         }
         
-        // Handle remaining existing habits (shift them down)
         while processedExisting < existingHabits.count {
             existingHabits[processedExisting].order = currentOrder
             currentOrder += 1
             processedExisting += 1
         }
         
-        // ✅ FIXED: Check if progress already exists for this tag
         do {
             try modelContext.save()
             
-            // Check for existing progress by tag
             let existingProgress = allProgress.first { progress in
                 progress.challengeTag == challenge.tag && !progress.isCompleted
             }
             
             if existingProgress == nil {
-                           // ✅ CRITICAL: Pass habit IDs to progress tracker
-                           let progress = MiniChallengeProgress(
-                               challengeID: challenge.id,
-                               challengeTag: challenge.tag,
-                               challengeTitle: challenge.title,
-                               requiredHabitIDs: newHabitIDs,  // ✅ FIXED
-                               startDate: Date()
-                           )
+                guard !newHabitIDs.isEmpty else {
+                    errorMessage = "Challenge must have at least one habit"
+                    showError = true
+                    return
+                }
+                
+                let progress = MiniChallengeProgress(
+                    challengeID: challenge.id,
+                    challengeTag: challenge.tag,
+                    challengeTitle: challenge.title,
+                    requiredHabitIDs: newHabitIDs,
+                    startDate: Date()
+                )
                 modelContext.insert(progress)
                 try modelContext.save()
                 
                 progressManager.addMiniChallenge(id: challenge.id)
-                          } else if existingProgress?.requiredHabitIDs.isEmpty == true {
-                              // Backfill for existing trackers
-                              existingProgress?.requiredHabitIDs = newHabitIDs
-                              try modelContext.save()
-                          }
+            } else if existingProgress?.requiredHabitIDs.isEmpty == true {
+                guard !newHabitIDs.isEmpty else {
+                    errorMessage = "Challenge must have at least one habit"
+                    showError = true
+                    return
+                }
+                existingProgress?.requiredHabitIDs = newHabitIDs
+                try modelContext.save()
+            }
             
             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                 addedToDesk = true
             }
             ReverieHaptics.successFeedback()
-            
-            // Auto-dismiss after 1 second
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                dismiss()
-            }
+
+            // NOTE: Do NOT auto-dismiss here. Let user review the progress section
+            // and close manually when ready (matches ThemeWeek behavior).
         } catch {
             print("Failed to save challenge habits: \(error)")
         }
     }
     
     func updateDailyProgress() {
-           guard let progress = activeProgress else { return }
-           
-           // ✅ FIXED: Use proper verification
-           progress.checkAndUpdateProgress(completions: completions)
-           
-           do {
-               try modelContext.save()
-               
-               if progress.isCompleted {
-                   ReverieHaptics.successFeedback()
-                   DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                       showCompletionModal = true
-                   }
-               } else if progress.isTodayComplete {
-                   ReverieHaptics.lightFeedback()
-               }
-           } catch {
-               print("Failed to update progress: \(error)")
-           }
-       }
+        guard let progress = activeProgress else { return }
+
+        progress.checkAndUpdateProgress(completions: completions, reflections: reflections)
+        
+        do {
+            try modelContext.save()
+            
+            if progress.isCompleted {
+                ReverieHaptics.successFeedback()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showCompletionModal = true
+                }
+            }
+        } catch {
+            print("Failed to update progress: \(error)")
+        }
+    }
     
     func finishChallenge() {
         guard let progress = activeProgress else { return }
         
-        // Remove challenge habits from Desk
-        let challengeHabits = habits.filter { $0.programTag == "C7-\(challenge.tag)" }
-        for habit in challengeHabits {
-            modelContext.delete(habit)
-        }
+        // ✅ FIX: Capture data BEFORE deletion to prevent accessing detached objects
+        let habitsToDelete = challengeHabits
         
-        // Mark progress as completed
-        progress.isCompleted = true
-        progress.completedDate = Date()
+        // ✅ FIX: Dismiss FIRST to prevent view from re-rendering with deleted data
+        dismiss()
         
-        // Clear from progress manager
-        progressManager.completeMiniChallenge()
-        
-        do {
-            try modelContext.save()
-            ReverieHaptics.successFeedback()
-            dismiss()
-        } catch {
-            print("Failed to finish challenge: \(error)")
+        // ✅ FIX: Perform operations after dismiss
+        Task { @MainActor in
+            // Small delay to ensure dismiss animation completes
+            try? await Task.sleep(for: .milliseconds(100))
+            
+            do {
+                // Delete habits (but keep progress marked as completed)
+                for habit in habitsToDelete {
+                    habit.prepareForDeletion()
+                    modelContext.delete(habit)
+                }
+                
+                // Mark challenge as completed
+                progress.isCompleted = true
+                
+                // Save changes
+                try modelContext.save()
+                
+                // Update journey progress based on completed challenges
+                JourneyProgressManager.shared.syncJourneyProgress(in: modelContext)
+                
+                // Update progress manager
+                progressManager.completeMiniChallenge()
+                
+                // Haptic feedback
+                ReverieHaptics.successFeedback()
+            } catch {
+                print("⚠️ Failed to complete challenge: \(error)")
+            }
         }
     }
     
     func restartChallenge() {
-        // First finish current challenge
-        finishChallenge()
-        
-        // Then immediately restart by dismissing and reopening
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            addChallengeToDesk()
-        }
-    }
-    
-    // MARK: Delete Challenge
-    func deleteChallenge() {
-        let challengeHabits = habits.filter { $0.programTag == "C7-\(challenge.tag)" }
-        for habit in challengeHabits {
-            modelContext.delete(habit)
-        }
+        guard let oldProgress = activeProgress else { return }
 
-        if let progress = allProgress.first(where: { p in
-            p.challengeTag == challenge.tag && !p.isCompleted
-        }) {
-            modelContext.delete(progress)
-        }
+        // Capture data needed for new progress before deletion
+        let challengeID = oldProgress.challengeID
+        let challengeTag = oldProgress.challengeTag
+        let challengeTitle = oldProgress.challengeTitle
+        let requiredHabitIDs = oldProgress.requiredHabitIDs
 
-        progressManager.completeMiniChallenge()
+        // Delete the old progress record (replacing it)
+        modelContext.delete(oldProgress)
+
+        // Create a fresh progress record
+        let newProgress = MiniChallengeProgress(
+            challengeID: challengeID,
+            challengeTag: challengeTag,
+            challengeTitle: challengeTitle,
+            requiredHabitIDs: requiredHabitIDs,
+            startDate: Date()
+        )
+
+        modelContext.insert(newProgress)
 
         do {
             try modelContext.save()
             ReverieHaptics.lightFeedback()
-            withAnimation(.spring()) { dismiss() }
         } catch {
-            print("Failed to delete challenge: \(error)")
+            print("Failed to restart challenge: \(error)")
+        }
+    }
+
+    /// Archive the challenge as a partial success (≥85.7% completion)
+    func archiveChallengeAsPartialSuccess() {
+        guard let progress = activeProgress else { return }
+        guard progress.shouldArchive(reflections: reflections) else { return }
+
+        progress.archive()
+
+        do {
+            try modelContext.save()
+            ReverieHaptics.successFeedback()
+        } catch {
+            print("Failed to archive challenge: \(error)")
+        }
+    }
+    
+    func deleteChallenge() {
+        // ✅ FIX: Capture data BEFORE deletion to prevent accessing detached objects
+        let habitsToDelete = challengeHabits // Capture the array
+        let progressToDelete = activeProgress // Capture the reference
+        
+        // ✅ FIX: Dismiss FIRST to prevent view from re-rendering with deleted data
+        dismiss()
+        
+        // ✅ FIX: Perform deletion after dismiss with slight delay to ensure view is gone
+        Task { @MainActor in
+            // Small delay to ensure dismiss animation completes
+            try? await Task.sleep(for: .milliseconds(100))
+            
+            do {
+                // Delete habits
+                for habit in habitsToDelete {
+                    habit.prepareForDeletion()
+                    modelContext.delete(habit)
+                }
+                
+                // Delete progress
+                if let progress = progressToDelete {
+                    modelContext.delete(progress)
+                }
+                
+                // Save context
+                try modelContext.save()
+                
+                // Update progress manager
+                progressManager.completeMiniChallenge()
+                
+                // Haptic feedback
+                ReverieHaptics.lightFeedback()
+            } catch {
+                // Note: Can't show error in this view anymore since it's dismissed
+                print("⚠️ Failed to delete challenge: \(error)")
+            }
         }
     }
     
     func categoryTimePriority(_ category: String) -> Int {
-           switch category {
-           case "Morning Rituals", "Focus Flow": return 1
-           case "Health Foundations", "Dopamine Design": return 2
-           case "Creative Practice", "Tiny Anchors": return 3
-           case "Connection", "Connection Lite": return 4
-           case "Mindful Living", "Chaos Mode", "Novelty Seeker", "Glowing Journey": return 5
-           default: return 999
-           }
-       }
-   }
-
-// MARK: - Challenge Habit Card
-
-private struct ChallengeHabitCard: View {
-    let habit: Project50Habit
-    let colorScheme: ColorScheme
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: habit.colorHex).opacity(0.15))
-                        .frame(width: 36, height: 36)
-                        .overlay(
-                            Circle()
-                                .strokeBorder(Color(hex: habit.colorHex).opacity(0.3), lineWidth: 1)
-                        )
-                    Image(systemName: habit.icon)
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color(hex: habit.colorHex))
-                }
-                
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(habit.name)
-                        .font(.system(size: 13, weight: .semibold))
-                        .fontDesign(.serif)
-                        .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
-                }
-                Spacer()
-            }
-            
-            Text(habit.description)
-                .font(.system(size: 12, weight: .regular))
-                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
+        switch category {
+        case "Morning Rituals", "Focus Flow", "Focus Sprint": return 1
+        case "Health Foundations", "Dopamine Design", "Energy Recharge": return 2
+        case "Creative Practice", "Tiny Anchors", "Creative Flow": return 3
+        case "Connection", "Connection Lite", "Connection Week": return 4
+        case "Mindful Living", "Chaos Mode", "Novelty Seeker", "Glowing Journey", "Reflection Reset", "Gratitude Glow": return 5
+        default: return 999
         }
-        .padding(16)
-        .reverieCardStyle(colorScheme: colorScheme)
     }
 }
-
-// MARK: - Section Card Component
-
-private struct SectionCard: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let content: String?
-    var rows: [(String, String)]? = nil
-    @Environment(\.colorScheme) private var colorScheme
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundStyle(iconColor)
-                Text(title)
-                    .font(.system(size: 13, weight: .bold))
-                    .timeAdaptiveText(colorScheme: colorScheme, style: .primary)
-            }
-            
-            if let content = content {
-                Text(content)
-                    .font(.system(size: 12))
-                    .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                    .lineSpacing(4)
-            }
-            
-            if let rows = rows {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(rows, id: \.1) { row in
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: row.0)
-                                .font(.system(size: 12))
-                                .foregroundStyle(iconColor.opacity(0.85))
-                                .padding(.top, 2)
-                            Text(row.1)
-                                .font(.system(size: 12))
-                                .timeAdaptiveText(colorScheme: colorScheme, style: .secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .reverieCardStyle(colorScheme: colorScheme)
-        .padding(.horizontal, 24)
-    }
-}
-
-// MARK: - Thread Complete Modal
 
 // MARK: - Thread Complete Modal
 
@@ -814,15 +1368,11 @@ struct ThreadCompleteModal: View {
     
     var body: some View {
         ZStack {
-            // Background blur
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
             
-            // Modal content - matching your reverieCardStyle
             VStack(spacing: 24) {
-                // Sparkle animation circle
                 ZStack {
-                    // Background glow
                     Circle()
                         .fill(
                             RadialGradient(
@@ -839,7 +1389,6 @@ struct ThreadCompleteModal: View {
                         .frame(width: 100, height: 100)
                         .blur(radius: 12)
                     
-                    // Sparkles around icon
                     ForEach(0..<8) { index in
                         Image(systemName: "sparkle")
                             .font(.system(size: 14))
@@ -857,7 +1406,6 @@ struct ThreadCompleteModal: View {
                             )
                     }
                     
-                    // Main icon
                     ZStack {
                         Circle()
                             .fill(Color(hex: challenge.colorHex).opacity(0.15))
@@ -874,7 +1422,6 @@ struct ThreadCompleteModal: View {
                 }
                 .frame(height: 140)
                 
-                // Text content
                 VStack(spacing: 10) {
                     Text("Thread Complete!")
                         .font(.system(size: 23, weight: .bold))
@@ -900,9 +1447,7 @@ struct ThreadCompleteModal: View {
                         .padding(.top, 6)
                 }
                 
-                // Buttons - matching your style
                 VStack(spacing: 12) {
-                    // Finish button - matching sageGreen style from your app
                     Button {
                         ReverieHaptics.successFeedback()
                         onFinish()
@@ -915,11 +1460,10 @@ struct ThreadCompleteModal: View {
                             .padding(.vertical, 12)
                             .background(Color.sageGreen)
                             .cornerRadius(12)
-                            .shadow(color: Color.shadowColor.opacity(0.2), radius: 4, y: 2)
+                            .shadow(color: Color.shadowColor, radius: 4, y: 2)
                     }
                     .buttonStyle(.plain)
                     
-                    // Restart button - subtle style matching your secondary buttons
                     Button {
                         ReverieHaptics.lightFeedback()
                         onRestart()
@@ -959,13 +1503,11 @@ struct ThreadCompleteModal: View {
             )
             .padding(.horizontal, 32)
             
-            // Confetti overlay
             if showConfetti {
                 ConfettiView(isActive: .constant(true))
             }
         }
         .onAppear {
-            // Stop confetti after 2 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 withAnimation {
                     showConfetti = false

@@ -14,31 +14,31 @@ final class HabitCompletion {
     var habitId: UUID
     var completedAt: Date
 
-    // You already have this:
-    var reflection: Reflection?  // keep
+    var reflection: Reflection?
 
-    // ✅ NEW — Snapshot fields so timeline can render even if Habit is deleted/renamed
+    // Snapshot fields so timeline can render even if Habit is deleted/renamed
     var snapshotName: String?
     var snapshotIcon: String?
     var snapshotColorHex: String?
     
-    // ✅ ADD THESE 4 LINES:
-        var snapshotProgramTag: String?
-        var snapshotProgramLevel: Int?
-        var snapshotCategory: String?
-        var snapshotCategoryIcon: String?
+    // Program tracking
+    var snapshotProgramTag: String?
+    var snapshotProgramLevel: Int?
+    var snapshotCategory: String?
+    var snapshotCategoryIcon: String?
+    
+    var wasScheduledForDay: Bool?
+    
+    // Day-level snapshot for accurate completion rates
+    var snapshotActiveHabitsCount: Int?
 
-    // Existing initializer still works (back-compat),
-    // but prefer the new `init(from:)` below going forward.
     init(habitId: UUID, completedAt: Date = Date()) {
         self.id = UUID()
         self.habitId = habitId
         self.completedAt = completedAt
-        // leave snapshot* nil — we’ll backfill or ignore for old rows
     }
 
-    // ✅ UPDATED - capture a complete snapshot at the moment of completion
-    convenience init(from habit: Habit, at date: Date = Date()) {
+    convenience init(from habit: Habit, at date: Date = Date(), activeHabitsCount: Int, wasScheduledForDay: Bool) {
         self.init(habitId: habit.id, completedAt: date)
         
         // Basic snapshot data
@@ -46,13 +46,19 @@ final class HabitCompletion {
         self.snapshotIcon = habit.icon
         self.snapshotColorHex = habit.colorHex
         
-        // ✅ Program tracking (critical for challenges)
+        // Program tracking (for challenges)
         self.snapshotProgramTag = habit.programTag
         self.snapshotProgramLevel = habit.programLevel
         
-        // ✅ Category info (useful for filtering/display)
+        // Category info (for filtering/display)
         self.snapshotCategory = habit.category
         self.snapshotCategoryIcon = habit.categoryIcon
+        
+        // Day-level context (for accurate completion rates)
+        self.snapshotActiveHabitsCount = activeHabitsCount
+        
+        // Schedule tracking (for progress calculation)
+        self.wasScheduledForDay = wasScheduledForDay
     }
 
     // Check if this completion is for today
@@ -68,7 +74,7 @@ final class HabitCompletion {
         Calendar.current.startOfDay(for: completedAt)
     }
     
-    // MARK: - Display Helpers (for views)
+    // MARK: - Display Helpers
     
     /// Get the habit name for display, using snapshot as fallback
     func displayName(from habits: [Habit]) -> String {
@@ -106,36 +112,35 @@ final class HabitCompletion {
 }
 
 
-// MARK: - Updated Reflection Model (Add this to your Models)
+// MARK: - Reflection Model
+
 @Model
 class Reflection {
     var id: UUID
     var mood: String
     var notes: String
     var isFavorite: Bool
-    var photoData: Data?           // NEW
-    var habitId: UUID              // NEW
-    var habitName: String          // NEW
-    var habitColorHex: String      // NEW
+    var photosData: [Data] = []
+    var habitId: UUID
+    var habitName: String
+    var habitColorHex: String
     var createdAt: Date
     
-    init(mood: String, notes: String, isFavorite: Bool, photoData: Data? = nil, habitId: UUID, habitName: String, habitColorHex: String) {
+    init(mood: String, notes: String, isFavorite: Bool, photosData: [Data] = [], habitId: UUID, habitName: String, habitColorHex: String) {
         self.id = UUID()
         self.mood = mood
         self.notes = notes
         self.isFavorite = isFavorite
-        self.photoData = photoData
+        self.photosData = photosData
         self.habitId = habitId
         self.habitName = habitName
         self.habitColorHex = habitColorHex
         self.createdAt = Date()
     }
 }
-// MARK: - Also update HabitCompletion model to link reflections
-// Add this property to HabitCompletion:
-// var reflection: Reflection?
 
 // MARK: - Daily Intention Model
+
 @Model
 final class DailyIntention {
     var id: UUID
@@ -148,5 +153,22 @@ final class DailyIntention {
         self.date = Calendar.current.startOfDay(for: date)
         self.text = text
         self.mood = mood
+    }
+}
+
+// MARK: - Daily Reflection Model
+
+@Model
+final class DailyReflection {
+    var id: UUID
+    var date: Date
+    var text: String
+    var isRestDay: Bool
+    
+    init(date: Date, text: String = "", isRestDay: Bool = false) {
+        self.id = UUID()
+        self.date = Calendar.current.startOfDay(for: date)
+        self.text = text
+        self.isRestDay = isRestDay
     }
 }

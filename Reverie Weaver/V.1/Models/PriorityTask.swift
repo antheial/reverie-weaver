@@ -20,12 +20,15 @@ class PriorityTask {
     var createdAt: Date
     var completedAt: Date?
     
-    // Repeat functionality
-    var repeatType: String // "none", "daily", "weekly", "weekdays", "custom"
-    var customRepeatDays: [Int] // [1,2,3] for Sun, Mon, Tue (Calendar weekday values)
-    
+    var repeatType: String
+    var customRepeatDays: [Int]
+
+    // PDF Import linking - connects PriorityTask to its source ExtractedTask
+    var sourceExtractedTaskId: UUID?
+    var sourceTaskListId: UUID?
+
     @Relationship(deleteRule: .cascade) var subTasks: [SubTask]?
-    
+
     init(
         title: String,
         taskDescription: String = "",
@@ -33,7 +36,9 @@ class PriorityTask {
         endDate: Date? = nil,
         colorHex: String = "C9D2B5",
         repeatType: String = "none",
-        customRepeatDays: [Int] = []
+        customRepeatDays: [Int] = [],
+        sourceExtractedTaskId: UUID? = nil,
+        sourceTaskListId: UUID? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -45,9 +50,11 @@ class PriorityTask {
         self.createdAt = Date()
         self.repeatType = repeatType
         self.customRepeatDays = customRepeatDays
+        self.sourceExtractedTaskId = sourceExtractedTaskId
+        self.sourceTaskListId = sourceTaskListId
     }
     
-    // ✅ FIXED: Check if task is active on a given date (enhanced with repeat logic)
+    // Check if task is active on a given date
     func isActive(on date: Date) -> Bool {
         let calendar = Calendar.current
         let checkDate = calendar.startOfDay(for: date)
@@ -71,42 +78,48 @@ class PriorityTask {
         }
         
         // Apply repeat logic
+        var isActive = false
         switch repeatType {
         case "none":
-            // ✅ FIXED: If there's an end date, show on all days in range
+            // If there's an end date, show on all days in range
             // If no end date, only show on start date
             if endDate != nil {
-                return true  // Already passed date range check above
+                isActive = true
             } else {
-                return checkDate == taskStart  // Single day only
+                isActive = checkDate == taskStart
             }
             
         case "daily":
             // Active every day within the date range
-            return true
+            isActive = true
             
         case "weekly":
             // Active once per week on the same weekday as start date
             let startWeekday = calendar.component(.weekday, from: taskStart)
             let checkWeekday = calendar.component(.weekday, from: checkDate)
-            return startWeekday == checkWeekday
+            isActive = startWeekday == checkWeekday
             
         case "weekdays":
             // Active Monday through Friday (weekday 2-6)
             let checkWeekday = calendar.component(.weekday, from: checkDate)
-            return checkWeekday >= 2 && checkWeekday <= 6
+            isActive = checkWeekday >= 2 && checkWeekday <= 6
             
         case "custom":
             // Active on custom selected days
             let checkWeekday = calendar.component(.weekday, from: checkDate)
-            return customRepeatDays.contains(checkWeekday)
+            isActive = customRepeatDays.contains(checkWeekday)
             
         default:
-            return checkDate >= taskStart
+            isActive = checkDate >= taskStart
+            #if DEBUG
+            AppLog.warn("Unknown repeat type '\(repeatType)' for task '\(title)'", category: "task.repeat")
+            #endif
         }
+        
+        return isActive
     }
     
-    // ✅ NEW: Check if task started on a specific date
+    // Check if task started on a specific date
     func startsOn(_ date: Date) -> Bool {
         let calendar = Calendar.current
         let checkDate = calendar.startOfDay(for: date)
@@ -114,7 +127,7 @@ class PriorityTask {
         return checkDate == taskStart
     }
     
-    // ✅ NEW: Get current day number and total days for multi-day tasks
+    // Get current day number and total days for multi-day tasks
     func getDayProgress(for date: Date) -> (current: Int, total: Int)? {
         guard let endDate = endDate else { return nil }
         
@@ -172,11 +185,15 @@ final class SubTask {
     var title: String
     var isCompleted: Bool
     var createdAt: Date
-    
-    init(title: String) {
+
+    // PDF Import linking - connects SubTask to its source ExtractedTask
+    var sourceExtractedTaskId: UUID?
+
+    init(title: String, sourceExtractedTaskId: UUID? = nil) {
         self.id = UUID()
         self.title = title
         self.isCompleted = false
         self.createdAt = Date()
+        self.sourceExtractedTaskId = sourceExtractedTaskId
     }
 }
